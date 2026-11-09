@@ -69,6 +69,11 @@
   :root { --gutter: 20px; --margin-x: 10px; --col: 78vw; --gap: 12px; --line: 32px; --header-h: 76px; }
 }
 
+/* smooth cross-fade when the visitor flips the theme switch */
+html.theme-fade, html.theme-fade body, html.theme-fade *:not(svg):not(path) {
+  transition: background-color 280ms var(--ease-ui), color 280ms var(--ease-ui), border-color 280ms var(--ease-ui) !important;
+}
+
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
