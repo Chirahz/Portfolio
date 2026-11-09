@@ -1,7 +1,8 @@
 ---
 import { nav } from '../data/site';
-const path = Astro.url.pathname.replace(/\/$/, '');
-const isCurrent = (m?: string) => !!m && (path === m || path.startsWith(m + '/'));
+import PenStroke from './PenStroke.astro';
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isCurrent = (m: string[] = []) => m.some((x) => (x === '/' ? path === '/' : path === x || path.startsWith(x + '/')));
 ---
 <header class="site-header wrap">
   <a class="mark" href="/" aria-label="CJ — UX, home">cj.</a>
@@ -11,8 +12,9 @@ const isCurrent = (m?: string) => !!m && (path === m || path.startsWith(m + '/')
         {nav.map((item) => (
           <li>
             {item.contact
-              ? <button type="button" class="link" data-open-contact>{item.label}</button>
-              : <a class="link" href={item.href} aria-current={isCurrent(item.match) ? 'page' : undefined}>{item.label}</a>}
+              ? <button type="button" data-open-contact>{item.label}<PenStroke /></button>
+              : <a href={item.href} aria-current={isCurrent(item.match) ? 'page' : undefined}
+                  class:list={[{ 'is-inked': isCurrent(item.match), 'pen-draw-in': isCurrent(item.match) }]}>{item.label}<PenStroke /></a>}
           </li>
         ))}
       </ul>
@@ -67,17 +69,17 @@ const isCurrent = (m?: string) => !!m && (path === m || path.startsWith(m + '/')
   .right { display: flex; align-items: center; gap: 32px; }
   ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 48px; }
   nav a, nav button {
-    font-size: 18px; color: var(--ink); background: none; border: 0; padding: 0;
+    position: relative;
+    font-size: 18px; color: var(--ink); background: none; border: 0; padding: 0; text-decoration: none;
     cursor: pointer; display: inline-flex; align-items: center; min-height: 44px;
-    background-image: linear-gradient(currentColor, currentColor);
-    background-size: 0% 1.5px; background-repeat: no-repeat; background-position: 0 calc(100% - 8px);
   }
-  @media (hover: hover) { nav a:hover, nav button:hover { background-size: 100% 1.5px; } }
-  /* current page: a pen stroke under the link */
-  nav a[aria-current="page"] {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.6C10 2.2 24 2 39 3.2' fill='none' stroke='%232B4C9B' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-size: 100% 6px; background-position: 0 calc(100% - 4px);
+  /* hovering any link draws the same pen stroke the current page wears */
+  @media (hover: hover) {
+    nav a:hover > :global(.pen-stroke path), nav button:hover > :global(.pen-stroke path) {
+      stroke-dashoffset: 0; transition: stroke-dashoffset 380ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
   }
+  nav a:focus-visible > :global(.pen-stroke path), nav button:focus-visible > :global(.pen-stroke path) { stroke-dashoffset: 0; }
 
   .theme {
     width: 44px; height: 44px; margin-right: -11px; display: grid; place-items: center;

@@ -18,7 +18,7 @@ export const site = {
 };
 
 export const nav = [
-  { href: '/#work', label: 'Work', match: '/work' },
-  { href: '/experience', label: 'Experience', match: '/experience' },
-  { href: '#contact', label: 'Contact', contact: true },
+  { href: '/#work', label: 'Work', match: ['/', '/work'] },
+  { href: '/experience', label: 'Experience', match: ['/experience'] },
+  { href: '#contact', label: 'Contact', contact: true, match: [] as string[] },
 ];
