@@ -1,0 +1,276 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PenArrow from '../../components/PenArrow.astro';
+import { projects, platformLabel } from '../../data/projects';
+
+export async function getStaticPaths() {
+  const cases = await getCollection('cases');
+  return cases.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props as { entry: CollectionEntry<'cases'> };
+const d = entry.data;
+const next = projects.find((p) => p.slug === d.next);
+const nextHref = next?.live ? `/work/${next.slug}` : null;
+const img = d.hero;
+---
+<Base title={d.title} description={d.statement.replace(/[[\]]/g, '')}>
+  <article class="case wrap">
+    <a class="back link" href="/#work"><PenArrow direction="w" /> All projects</a>
+
+    <header class="intro">
+      <h1>{d.title}</h1>
+      <p class="statement">{d.statement}</p>
+      <dl class="meta">
+        <div><dt>Client</dt><dd>{d.client}</dd></div>
+        <div><dt>My role</dt><dd>{d.role}</dd></div>
+        <div><dt>Year</dt><dd>{d.year}</dd></div>
+        <div><dt>Scope</dt><dd>{d.scope}</dd></div>
+      </dl>
+    </header>
+
+    <figure class="hero">
+      <Image src={img} alt={d.heroAlt} widths={[640, 1280, 1920]} sizes="(max-width: 720px) 100vw, 1248px" loading="eager" fetchpriority="high" />
+    </figure>
+
+    <section class="sec" aria-labelledby="s-brief">
+      <p class="label hand" aria-hidden="true">the brief</p>
+      <div class="body">
+        <h2 id="s-brief">{d.brief.heading}</h2>
+        {d.brief.body.map((t) => <p>{t}</p>)}
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="s-listen">
+      <p class="label hand" aria-hidden="true">listen</p>
+      <div class="body">
+        <h2 id="s-listen">{d.listen.heading}</h2>
+        {d.listen.body.map((t) => <p>{t}</p>)}
+        <figure class="shot">
+          <Image src={img} alt="" widths={[840, 1680]} sizes="(max-width: 720px) 100vw, 840px" />
+          <figcaption>{d.listen.caption}</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="s-map">
+      <p class="label hand" aria-hidden="true">map</p>
+      <div class="body">
+        <h2 id="s-map">{d.map.heading}</h2>
+        {d.map.body.map((t) => <p>{t}</p>)}
+      </div>
+      <figure class="shot wide">
+        <Image src={img} alt="" widths={[1248, 2496]} sizes="(max-width: 720px) 100vw, 1248px" class="map-img" />
+        <figcaption>{d.map.caption}</figcaption>
+      </figure>
+    </section>
+
+    <section class="sec" aria-labelledby="s-sketch">
+      <p class="label hand" aria-hidden="true">sketch</p>
+      <div class="body">
+        <h2 id="s-sketch">{d.sketch.heading}</h2>
+        {d.sketch.body.map((t) => <p>{t}</p>)}
+        <div class="pair">
+          {d.sketch.captions.map((c) => (
+            <figure class="shot">
+              <Image src={img} alt="" widths={[420, 840]} sizes="(max-width: 720px) 100vw, 412px" />
+              <figcaption>{c}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="s-test">
+      <p class="label hand" aria-hidden="true">test</p>
+      <div class="body">
+        <h2 id="s-test">{d.test.heading}</h2>
+        {d.test.body.map((t) => <p>{t}</p>)}
+        <figure class="shot">
+          <Image src={img} alt="" widths={[840, 1680]} sizes="(max-width: 720px) 100vw, 840px" />
+          <figcaption>{d.test.caption}</figcaption>
+        </figure>
+        <ol class="changes">
+          <li class="changes-head" aria-hidden="true"><span>What we found</span><span></span><span>What changed</span></li>
+          {d.test.changes.map((c) => (
+            <li>
+              <span class="found"><span class="visually-hidden">What we found: </span>{c.found}</span>
+              <PenArrow direction="e" size={18} class="to" />
+              <span class="changed"><span class="visually-hidden">What changed: </span>{c.changed}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="s-ship">
+      <p class="label hand" aria-hidden="true">ship</p>
+      <div class="body">
+        <h2 id="s-ship">{d.ship.heading}</h2>
+        {d.ship.body.map((t) => <p>{t}</p>)}
+        <div class="phones">
+          {d.ship.captions.map((c) => (
+            <figure>
+              <div class="phone"><Image src={img} alt="" widths={[270, 540]} sizes="(max-width: 720px) 60vw, 264px" /></div>
+              <figcaption>{c}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="s-impact">
+      <p class="label hand" aria-hidden="true">impact</p>
+      <div class="body">
+        <h2 id="s-impact">{d.impact.heading}</h2>
+        <dl class="figures">
+          {d.impact.figures.map((f) => (
+            <div><dt>{f.label}</dt><dd>{f.value}</dd></div>
+          ))}
+        </dl>
+        {d.impact.note && <p class="fine">{d.impact.note}</p>}
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="s-back">
+      <p class="label hand" aria-hidden="true">looking back</p>
+      <div class="body">
+        <h2 id="s-back">{d.lookingBack.heading}</h2>
+        {d.lookingBack.body.map((t) => <p>{t}</p>)}
+      </div>
+    </section>
+
+    {next && (
+      <aside class="next" aria-label="Next project">
+        {(() => {
+          const Tag = nextHref ? 'a' : 'div';
+          return (
+            <Tag class="next-card" href={nextHref ?? undefined}>
+              <div class="next-text">
+                <p class="hand next-label">next up</p>
+                <p class="next-title">{next.title}</p>
+                <p class="tags">{platformLabel[next.platform]} · {next.field}</p>
+                <span class="cta">{nextHref ? <>Read the case <PenArrow /></> : 'Write-up soon'}</span>
+              </div>
+              <div class="next-img"><Image src={next.image} alt="" widths={[480, 960]} sizes="(max-width: 720px) 100vw, 480px" /></div>
+            </Tag>
+          );
+        })()}
+      </aside>
+    )}
+  </article>
+</Base>
+
+<style>
+  .case { padding-top: 40px; padding-bottom: 128px; }
+  .back { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; color: var(--pencil); min-height: 44px; }
+  @media (hover: hover) { .back:hover { color: var(--ink); } }
+
+  .intro { margin-top: 32px; max-width: 1040px; }
+  h1 {
+    margin: 0; font-size: clamp(52px, 6.7vw, 96px); line-height: 1; font-weight: 400;
+    letter-spacing: -0.03em; font-variation-settings: 'opsz' 144;
+  }
+  .statement { margin: 24px 0 0; font-size: clamp(20px, 1.8vw, 26px); line-height: 1.4; color: var(--ink); max-width: 820px; }
+  .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin: 48px 0 0; max-width: 1248px; }
+  .meta dt { font-size: 15px; color: var(--pencil); }
+  .meta dd { margin: 4px 0 0; font-size: 17px; line-height: 1.45; }
+
+  .hero { margin: 64px 0 0; aspect-ratio: 1248 / 702; overflow: hidden; background: var(--placeholder); border-radius: 4px; }
+  .hero :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+
+  .sec {
+    display: grid; grid-template-columns: 296px minmax(0, 840px); column-gap: 112px;
+    margin-top: 128px;
+  }
+  .label { margin: 0; font-size: 30px; line-height: 1; padding-top: 6px; }
+  .body { min-width: 0; }
+  .body > :first-child { margin-top: 0; }
+  h2 { font-size: clamp(28px, 2.6vw, 36px); line-height: 1.2; font-weight: 450; letter-spacing: -0.015em; margin: 0 0 20px; font-variation-settings: 'opsz' 48; }
+  .body p { margin: 0 0 16px; max-width: 66ch; font-size: 19px; line-height: 1.65; }
+
+  .shot { margin: 40px 0 0; }
+  .shot :global(img) { width: 100%; height: auto; aspect-ratio: 840 / 520; object-fit: cover; background: var(--placeholder); border-radius: 4px; }
+  .shot figcaption, .phones figcaption { margin-top: 12px; font-size: 15px; color: var(--pencil); }
+  .wide { grid-column: 1 / -1; margin-top: 48px; }
+  .wide :global(img) { aspect-ratio: 1248 / 560; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pair :global(img) { aspect-ratio: 4 / 5; }
+
+  .changes { list-style: none; padding: 0; margin: 40px 0 0; }
+  .changes li {
+    display: grid; grid-template-columns: 1fr 24px 1fr; gap: 20px; align-items: start;
+    padding: 18px 0; border-top: 1px solid var(--rule-strong); font-size: 17px; line-height: 1.5;
+  }
+  .changes .changes-head { border-top: 0; padding-top: 0; font-size: 15px; color: var(--pencil); }
+  .changes :global(.to) { color: var(--pen); margin-top: 4px; }
+  .found { color: var(--pencil); }
+
+  .phones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
+  .phones figure { margin: 0; }
+  .phone { aspect-ratio: 9 / 19.5; border-radius: 28px; overflow: hidden; background: var(--placeholder); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+  .phone :global(img) { width: 100%; height: 100%; object-fit: cover; }
+
+  .figures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 8px 0 0; }
+  .figures div { display: flex; flex-direction: column-reverse; justify-content: flex-end; border-top: 1px solid var(--ink); padding-top: 16px; }
+  .figures dd { margin: 0; font-size: clamp(36px, 3.4vw, 48px); line-height: 1.1; letter-spacing: -0.02em; font-variation-settings: 'opsz' 96; }
+  .figures dt { margin-top: 8px; font-size: 16px; color: var(--pencil); line-height: 1.45; }
+  .fine { font-size: 15px !important; color: var(--pencil); margin-top: 24px !important; }
+
+  /* next project: the whole card is the link */
+  .next { margin-top: 160px; }
+  .next-card {
+    position: relative; display: grid; grid-template-columns: 1fr 480px; gap: 48px; align-items: center;
+    text-decoration: none; color: inherit; border-radius: 18px;
+  }
+  .next-card::before {
+    content: ''; position: absolute; inset: -16px; z-index: -1; border-radius: 22px;
+    background: var(--lift); box-shadow: var(--shadow-lift);
+    opacity: 0; transform: scale(0.99);
+    transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui);
+  }
+  .next { position: relative; z-index: 0; }
+  .next-label { margin: 0; font-size: 28px; line-height: 1; }
+  .next-title { margin: 12px 0 4px; font-size: clamp(40px, 4.4vw, 64px); line-height: 1.05; letter-spacing: -0.025em; font-variation-settings: 'opsz' 96; }
+  .tags { margin: 0; font-size: 16px; color: var(--pencil); }
+  .cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 24px; font-size: 17px; color: var(--pen); }
+  div.next-card .cta { color: var(--pencil); }
+  .next-img { aspect-ratio: 480 / 320; overflow: hidden; border-radius: 4px; background: var(--placeholder); transition: border-radius 220ms var(--ease-ui); }
+  .next-img :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-focal); }
+  @media (hover: hover) {
+    a.next-card:hover::before { opacity: 1; transform: none; transition-delay: 80ms; }
+    a.next-card:hover .next-img { border-radius: 10px; }
+    a.next-card:hover .next-img :global(img) { transform: scale(1.02); }
+  }
+  .next-card:focus-visible { outline: none; }
+  .next-card:focus-visible::before { opacity: 1; transform: none; box-shadow: var(--shadow-lift), 0 0 0 2px var(--pen); }
+
+  @media (max-width: 1100px) {
+    .sec { grid-template-columns: 200px minmax(0, 1fr); column-gap: 48px; }
+    .next-card { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .case { padding-top: 16px; padding-bottom: 96px; }
+    .intro { margin-top: 20px; }
+    .meta { grid-template-columns: 1fr 1fr; gap: 20px 16px; margin-top: 32px; }
+    .hero { margin-top: 40px; aspect-ratio: 4 / 3; margin-inline: calc(-1 * var(--gutter)); border-radius: 0; }
+    .sec { grid-template-columns: minmax(0, 1fr); margin-top: 80px; }
+    .label { font-size: 26px; margin-bottom: 12px; }
+    .body p { font-size: 18px; }
+    .pair { grid-template-columns: 1fr; }
+    .wide { margin-top: 32px; }
+    .wide :global(img) { aspect-ratio: 4 / 3; }
+    .changes li { grid-template-columns: 1fr; gap: 6px; }
+    .changes .changes-head { display: none; }
+    .changes :global(.to) { transform: rotate(135deg) !important; }
+    .phones { grid-template-columns: repeat(3, 62vw); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scrollbar-width: none; }
+    .phones figure { scroll-snap-align: start; }
+    .figures { grid-template-columns: 1fr; gap: 28px; }
+    .next { margin-top: 112px; }
+    .next-card { grid-template-columns: 1fr; gap: 24px; }
+    .next-img { order: -1; }
+  }
+</style>

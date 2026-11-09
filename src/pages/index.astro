@@ -1,0 +1,350 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import PenArrow from '../components/PenArrow.astro';
+import { projects, platformLabel, projectHref, type Platform } from '../data/projects';
+
+const filters: { key: 'all' | Platform; label: string; count: number }[] = [
+  { key: 'all', label: 'all', count: projects.length },
+  ...(['mobile', 'web', 'research'] as Platform[]).map((k) => ({
+    key: k, label: k, count: projects.filter((p) => p.platform === k).length,
+  })),
+];
+---
+<Base footer={false}>
+  <div class="landing wrap">
+    <section class="head" aria-labelledby="hl">
+      <h1 id="hl">
+        Designing money<br />
+        that works for <span class="circled">everyone.<svg class="ring" viewBox="0 0 270 66" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M139 5.5C84 4.2 21 8 6.2 27.8c-9 12.4 14 28 70 31.6 47 3 113 2.6 157-5.2 26-4.6 37-13.3 32.3-23.5C258.3 15.6 216 6.6 160.6 4.4 136 3.5 112 4 96 6.4"/></svg></span>
+      </h1>
+      <p class="note hand" aria-hidden="true"><PenArrow direction="n" size={20} /> especially the unbanked</p>
+    </section>
+
+    <p class="intro">Senior UX designer and researcher with 8+&nbsp;years advancing financial inclusion through digital financial products.</p>
+
+    <section class="work" id="work" aria-labelledby="work-title">
+      <h2 id="work-title" class="visually-hidden">Selected work</h2>
+      <div class="toolbar">
+        <div class="filters" role="group" aria-label="Filter projects">
+          {filters.map((f, i) => (
+            <button type="button" class="filter" data-filter={f.key} aria-pressed={i === 0 ? 'true' : 'false'}>
+              {f.label} <span class="count">{f.count}</span>
+            </button>
+          ))}
+        </div>
+        <div class="controls">
+          <p class="counter" aria-live="polite"><span data-range>1–3</span> of <span data-total>{projects.length}</span></p>
+          <button type="button" class="arrow" data-prev aria-label="Previous projects" aria-disabled="true"><PenArrow direction="w" size={16} /></button>
+          <button type="button" class="arrow" data-next aria-label="Next projects"><PenArrow direction="e" size={16} /></button>
+        </div>
+      </div>
+
+      <ul class="rail" data-rail>
+        {projects.map((p, i) => {
+          const href = projectHref(p);
+          const Tag = href ? 'a' : 'div';
+          return (
+            <li class="card" data-platform={p.platform}>
+              <Tag class="card-hit" href={href ?? undefined} aria-label={href ? undefined : `${p.title} — case study coming soon`}>
+                <div class="card-top">
+                  <div>
+                    <h3>{p.title}</h3>
+                    <p class="tags">{platformLabel[p.platform]} · {p.field}</p>
+                  </div>
+                  <span class="cta">{href ? <>Read the case <PenArrow /></> : 'Write-up soon'}</span>
+                </div>
+                <div class="frame">
+                  <Image src={p.image} alt={p.alt} widths={[400, 800]} sizes="(max-width: 720px) 78vw, 400px"
+                    loading={i < 4 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} />
+                </div>
+              </Tag>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  </div>
+</Base>
+
+<script>
+  const rail = document.querySelector<HTMLUListElement>('[data-rail]')!;
+  const prev = document.querySelector<HTMLButtonElement>('[data-prev]')!;
+  const next = document.querySelector<HTMLButtonElement>('[data-next]')!;
+  const rangeEl = document.querySelector('[data-range]')!;
+  const totalEl = document.querySelector('[data-total]')!;
+  const cards = [...rail.querySelectorAll<HTMLLIElement>('.card')];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+  const visibleCards = () => cards.filter((c) => !c.hidden);
+  const step = () => {
+    const v = visibleCards();
+    if (v.length < 2) return v[0]?.offsetWidth ?? 1;
+    return v[1].offsetLeft - v[0].offsetLeft;
+  };
+  const perView = () => {
+    const pad = parseFloat(getComputedStyle(rail).paddingLeft);
+    return Math.max(1, Math.floor((rail.clientWidth - pad + 8) / step()));
+  };
+
+  function update() {
+    const total = visibleCards().length;
+    const s = step();
+    const first = Math.min(total - 1, Math.round(rail.scrollLeft / s));
+    const last = Math.min(total, first + perView());
+    rangeEl.textContent = total === 0 ? '0' : first + 1 === last ? `${last}` : `${first + 1}–${last}`;
+    totalEl.textContent = String(total);
+    const atStart = rail.scrollLeft <= 4;
+    const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4 || last >= total;
+    prev.setAttribute('aria-disabled', String(atStart));
+    next.setAttribute('aria-disabled', String(atEnd));
+  }
+
+  const go = (dir: 1 | -1) => {
+    rail.scrollBy({ left: dir * perView() * step(), behavior: reduce.matches ? 'auto' : 'smooth' });
+  };
+  prev.addEventListener('click', () => prev.getAttribute('aria-disabled') !== 'true' && go(-1));
+  next.addEventListener('click', () => next.getAttribute('aria-disabled') !== 'true' && go(1));
+
+  let raf = 0;
+  rail.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive: true });
+  addEventListener('resize', update);
+
+  // Filters
+  document.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.filter;
+      document.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      rail.classList.add('is-filtering');
+      const apply = () => {
+        cards.forEach((c) => { c.hidden = key !== 'all' && c.dataset.platform !== key; });
+        rail.scrollLeft = 0;
+        update();
+        requestAnimationFrame(() => rail.classList.remove('is-filtering'));
+      };
+      reduce.matches ? apply() : setTimeout(apply, 150);
+    });
+  });
+
+  // Mouse drag to scroll (touch & trackpads scroll natively)
+  let dragging = false, moved = false, startX = 0, startLeft = 0;
+  rail.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    dragging = true; moved = false; startX = e.clientX; startLeft = rail.scrollLeft;
+  });
+  addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) > 6) { moved = true; rail.classList.add('is-dragging'); }
+    if (moved) rail.scrollLeft = startLeft - dx;
+  });
+  addEventListener('pointerup', () => {
+    if (!dragging) return;
+    dragging = false;
+    if (moved) {
+      rail.classList.remove('is-dragging');
+      // settle on the nearest card
+      const s = step();
+      rail.scrollTo({ left: Math.round(rail.scrollLeft / s) * s, behavior: reduce.matches ? 'auto' : 'smooth' });
+    }
+  });
+  rail.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+  rail.addEventListener('dragstart', (e) => e.preventDefault());
+
+  // Arrow keys move between cards
+  rail.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const items = visibleCards().map((c) => c.querySelector<HTMLElement>('a.card-hit')).filter(Boolean) as HTMLElement[];
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    if (i < 0) return;
+    const n = items[i + (e.key === 'ArrowRight' ? 1 : -1)];
+    if (n) { e.preventDefault(); n.focus(); }
+  });
+
+  update();
+</script>
+
+<style>
+  /* ---------- Layout ---------- */
+  .landing {
+    display: grid;
+    grid-template-columns: var(--col) var(--col) minmax(0, 1fr);
+    column-gap: var(--gap);
+    grid-template-areas:
+      "head head intro"
+      "work work work";
+    padding-top: 28px;
+    padding-bottom: 48px;
+  }
+  .head { grid-area: head; }
+  .intro { grid-area: intro; }
+  .work { grid-area: work; min-width: 0; }
+
+  /* ---------- Headline ---------- */
+  h1 {
+    margin: 0;
+    font-size: clamp(40px, 4.2vw, 60px);
+    line-height: 0.96;
+    font-weight: 420;
+    letter-spacing: -0.025em;
+    font-variation-settings: 'opsz' 72;
+  }
+  .circled { position: relative; display: inline-block; margin-left: 0.36em; white-space: nowrap; }
+  .ring {
+    position: absolute; left: -0.24em; top: -0.1em;
+    width: calc(100% + 0.54em); height: calc(100% + 0.24em); max-width: none;
+    overflow: visible; pointer-events: none;
+  }
+  .ring path {
+    fill: none; stroke: var(--pen); stroke-width: 2.4; stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 1; stroke-dashoffset: 1;
+    animation: draw 600ms var(--ease-focal) 380ms forwards;
+  }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  .note {
+    margin: 10px 0 0;
+    padding-left: calc(clamp(40px, 4.2vw, 60px) * 6.5);
+    font-size: 26px; line-height: 1;
+    display: flex; align-items: flex-end; gap: 6px;
+    opacity: 0; transform: translateY(-4px);
+    animation: settle 400ms var(--ease-ui) 900ms forwards;
+  }
+  .note :global(svg) { margin-bottom: 4px; }
+  @keyframes settle { to { opacity: 1; transform: none; } }
+
+  .intro {
+    margin: 6px 0 0;
+    font-size: 20px; line-height: 29px; color: var(--ink);
+    max-width: 420px;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    margin-top: 36px; height: 48px;
+  }
+  .filters { display: flex; gap: 28px; }
+  .filter {
+    position: relative; background: none; border: 0; padding: 0; cursor: pointer;
+    font-size: 18px; color: var(--pencil); min-height: 44px;
+    transition: color 150ms var(--ease-ui);
+  }
+  .filter .count { font-variant-numeric: tabular-nums; }
+  .filter[aria-pressed="true"] { color: var(--ink); }
+  .filter::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 6px; height: 6px;
+    background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.6C10 2.2 24 2 39 3.2' fill='none' stroke='%232B4C9B' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 240ms var(--ease-focal);
+  }
+  .filter[aria-pressed="true"]::after { transform: scaleX(1); }
+  @media (hover: hover) { .filter:hover { color: var(--ink); } }
+
+  .controls { display: flex; align-items: center; gap: 0; margin-right: -8px; }
+  .counter { margin: 0 8px 0 0; font-size: 15px; color: var(--pencil); font-variant-numeric: tabular-nums; }
+  .arrow {
+    width: 48px; height: 48px; display: grid; place-items: center; cursor: pointer;
+    border: 0; background: none; border-radius: 999px; position: relative; color: var(--ink);
+    transition: opacity 150ms var(--ease-ui), transform 160ms var(--ease-ui);
+  }
+  .arrow::before {
+    content: ''; position: absolute; inset: 8px; border-radius: 999px;
+    box-shadow: inset 0 0 0 1.25px currentColor; transition: background 150ms var(--ease-ui);
+  }
+  .arrow :global(svg) { position: relative; }
+  .arrow[aria-disabled="true"] { opacity: 0.35; cursor: default; }
+  .arrow:not([aria-disabled="true"]):active { transform: scale(0.94); }
+  @media (hover: hover) { .arrow:not([aria-disabled="true"]):hover::before { background: var(--lift); } }
+
+  /* ---------- Rail ---------- */
+  .rail {
+    list-style: none; margin: 4px calc(-1 * var(--gutter)) 0; padding: 12px var(--gutter) 24px;
+    display: flex; gap: var(--gap);
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+    cursor: grab;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .rail.is-dragging .card-hit { pointer-events: none; }
+  .rail.is-filtering .card { opacity: 0; transform: translateY(6px); }
+
+  .card {
+    flex: 0 0 var(--col); scroll-snap-align: start;
+    transition: opacity 200ms var(--ease-ui), transform 280ms var(--ease-focal);
+  }
+  @media (min-width: 1101px) {
+    /* let the last page of cards line up with the left column */
+    .card:last-child { margin-right: max(0px, calc(100vw - 2 * var(--gutter) - 3 * var(--col) - 2 * var(--gap))); }
+  }
+  .card-hit { position: relative; display: block; text-decoration: none; color: inherit; border-radius: 18px; }
+  .card-hit:focus-visible { outline: none; }
+
+  /* the hover lift: a paper panel 12px proud of the card */
+  .card-hit::before {
+    content: ''; position: absolute; inset: -12px; z-index: -1;
+    background: var(--lift); border-radius: 18px; box-shadow: var(--shadow-lift);
+    opacity: 0; transform: scale(0.985);
+    transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui);
+  }
+  .card { position: relative; z-index: 0; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 12px; min-height: 56px; }
+  h3 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 560; letter-spacing: -0.01em; font-variation-settings: 'opsz' 24; }
+  .tags { margin: 0; font-size: 15px; line-height: 22px; color: var(--pencil); }
+  .cta {
+    display: inline-flex; align-items: center; gap: 6px; flex: none;
+    font-size: 15px; line-height: 22px; color: var(--pen);
+    opacity: 0; transform: translateX(-4px);
+    transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui);
+  }
+  div.card-hit .cta { color: var(--pencil); }
+
+  .frame { aspect-ratio: 400 / 384; overflow: hidden; background: var(--placeholder); border-radius: 0; transition: border-radius 220ms var(--ease-ui); }
+  .frame :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-focal); user-select: none; -webkit-user-drag: none; }
+
+  @media (hover: hover) {
+    .card-hit:hover::before, .card-hit:hover .cta { transition-delay: 80ms; }
+    .card-hit:hover::before { opacity: 1; transform: none; }
+    .card-hit:hover .cta { opacity: 1; transform: none; }
+    .card-hit:hover .frame { border-radius: 10px; }
+    a.card-hit:hover .frame :global(img) { transform: scale(1.02); }
+  }
+  .card-hit:focus-visible::before { opacity: 1; transform: none; box-shadow: var(--shadow-lift), 0 0 0 2px var(--pen); transition-duration: 150ms; }
+  .card-hit:focus-visible .cta { opacity: 1; transform: none; transition-duration: 150ms; }
+  .card-hit:focus-visible .frame { border-radius: 10px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1100px) {
+    .note { padding-left: calc(clamp(40px, 4.2vw, 60px) * 6.2); }
+  }
+  @media (max-width: 900px) {
+    .landing {
+      grid-template-columns: 1fr;
+      grid-template-areas: "head" "intro" "work";
+    }
+    .intro { margin-top: 28px; max-width: 560px; }
+  }
+  @media (max-width: 720px) {
+    .landing { grid-template-areas: "head" "work" "intro"; padding-top: 24px; }
+    h1 { font-size: 40px; line-height: 1; }
+    .circled { margin-left: 0.3em; }
+    .note { padding-left: 0; justify-content: flex-end; font-size: 24px; margin-top: 10px; padding-right: 8px; }
+    .toolbar { margin-top: 28px; height: auto; }
+    .filters { gap: 18px; }
+    .filter { font-size: 17px; }
+    .counter, .arrow { display: none; }
+    .controls { display: none; }
+    .rail { cursor: auto; }
+    .card .cta { display: none; }
+    .card-top { min-height: 0; }
+    .intro { margin-top: 20px; font-size: 18px; line-height: 28px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ring path { animation: none; stroke-dashoffset: 0; }
+    .note { animation: none; opacity: 1; transform: none; }
+  }
+</style>

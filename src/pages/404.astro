@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+import PenArrow from '../components/PenArrow.astro';
+---
+<Base title="Page not found">
+  <section class="nf wrap">
+    <p class="hand scribble" aria-hidden="true">this page got torn out</p>
+    <h1>We couldn't find that page.</h1>
+    <p class="sub">The link may be old, or the case study may not be written up yet.</p>
+    <a class="home" href="/#work">See the work <PenArrow direction="e" /></a>
+  </section>
+</Base>
+
+<style>
+  .nf { padding-top: 96px; padding-bottom: 160px; max-width: 900px; }
+  .scribble { margin: 0 0 16px; font-size: 32px; transform: rotate(-2deg); transform-origin: left; display: inline-block; }
+  h1 { margin: 0; font-size: clamp(40px, 5vw, 72px); line-height: 1.05; font-weight: 400; letter-spacing: -0.025em; }
+  .sub { color: var(--pencil); font-size: 20px; margin: 20px 0 40px; }
+  .home {
+    display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 24px;
+    border-radius: 999px; background: var(--ink); color: var(--paper); text-decoration: none; font-size: 17px;
+  }
+</style>

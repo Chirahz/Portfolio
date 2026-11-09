@@ -1,0 +1,12 @@
+---
+// A hand-drawn arrow. direction: 'ne' (↗), 'e' (→), 'w' (←), 'n' (↑)
+interface Props { direction?: 'ne' | 'e' | 'w' | 'n'; class?: string; size?: number }
+const { direction = 'ne', class: cls = '', size = 14 } = Astro.props;
+const rot = { ne: 0, e: 45, w: 225, n: -45 }[direction];
+---
+<svg class:list={['pen-arrow', cls]} width={size} height={size} viewBox="0 0 16 16" fill="none"
+  stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" style={`transform: rotate(${rot}deg)`}>
+  <path d="M3.2 12.9c2.6-2.7 5.4-5.5 9.2-9.5" />
+  <path d="M6.4 3.3c2.2.1 4.2 0 6.1-.1.1 2 .1 4.1.2 6.2" />
+</svg>

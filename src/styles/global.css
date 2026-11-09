@@ -1,0 +1,131 @@
+@import '@fontsource-variable/fraunces/opsz.css';
+@import '@fontsource/caveat/latin-500.css';
+@import '@fontsource/caveat/latin-600.css';
+
+/* ---------- Tokens ---------- */
+:root {
+  --paper: #F7F3EB;
+  --lift: #FFFDF8;
+  --placeholder: #EBE5D9;
+  --ink: #1C1B19;
+  --pencil: #5E5A52;
+  --pen: #2B4C9B;
+  --rule: rgba(184, 204, 228, 0.32);
+  --rule-strong: rgba(184, 204, 228, 0.6);
+  --margin-line: rgba(232, 150, 139, 0.45);
+  --shadow-lift: 0 1px 2px rgba(60, 45, 20, 0.06), 0 10px 28px rgba(60, 45, 20, 0.10);
+  --scrim: rgba(28, 27, 25, 0.28);
+
+  --serif: 'Fraunces Variable', 'Fraunces', Georgia, serif;
+  --hand: 'Caveat', 'Bradley Hand', cursive;
+
+  --line: 36px;          /* ruled line spacing */
+  --gutter: 96px;        /* page side margin */
+  --margin-x: 64px;      /* red margin line */
+  --col: 400px;          /* carousel card */
+  --gap: 16px;
+  --header-h: 132px;
+
+  --ease-ui: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-focal: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #151412;
+    --lift: #1E1C19;
+    --placeholder: #2A2723;
+    --ink: #EDE8DE;
+    --pencil: #ABA498;
+    --pen: #93ABEB;
+    --rule: rgba(232, 226, 214, 0.07);
+    --rule-strong: rgba(232, 226, 214, 0.14);
+    --margin-line: rgba(232, 150, 139, 0.30);
+    --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.45);
+    --scrim: rgba(0, 0, 0, 0.5);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #151412;
+  --lift: #1E1C19;
+  --placeholder: #2A2723;
+  --ink: #EDE8DE;
+  --pencil: #ABA498;
+  --pen: #93ABEB;
+  --rule: rgba(232, 226, 214, 0.07);
+  --rule-strong: rgba(232, 226, 214, 0.14);
+  --margin-line: rgba(232, 150, 139, 0.30);
+  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.45);
+  --scrim: rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 1100px) {
+  :root { --gutter: 56px; --margin-x: 36px; --col: 340px; }
+}
+@media (max-width: 720px) {
+  :root { --gutter: 20px; --margin-x: 10px; --col: 78vw; --gap: 12px; --line: 32px; --header-h: 76px; }
+}
+
+/* ---------- Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--paper);
+  /* ruled paper + red margin line */
+  background-image:
+    linear-gradient(to right, transparent calc(var(--margin-x) - 1px), var(--margin-line) calc(var(--margin-x) - 1px), var(--margin-line) var(--margin-x), transparent var(--margin-x)),
+    repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px), var(--rule) var(--line));
+  background-position: 0 0, 0 var(--header-h);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-optical-sizing: auto;
+  font-size: 18px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, svg, video { display: block; max-width: 100%; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+::selection { background: color-mix(in srgb, var(--pen) 22%, transparent); }
+
+:focus-visible { outline: 2px solid var(--pen); outline-offset: 4px; border-radius: 4px; }
+
+.wrap { padding-inline: var(--gutter); }
+.hand { font-family: var(--hand); color: var(--pen); font-weight: 500; }
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+.skip {
+  position: absolute; left: var(--gutter); top: -60px; z-index: 100;
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 8px;
+  text-decoration: none; transition: top 150ms var(--ease-ui);
+}
+.skip:focus { top: 16px; }
+
+/* text link with a pen underline */
+.link {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px; background-repeat: no-repeat; background-position: 0 100%;
+  transition: background-size 240ms var(--ease-ui);
+  padding-bottom: 2px;
+}
+@media (hover: hover) { .link:hover { background-size: 100% 1.5px; } }
+
+/* pen-drawn arrow used in "Read the case" etc. */
+.pen-arrow { width: 14px; height: 14px; flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important; animation-delay: 0ms !important;
+    transition-duration: 150ms !important; transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,46 @@
+---
+import { nav } from '../data/site';
+---
+<header class="site-header wrap">
+  <a class="mark" href="/" aria-label="CJ — UX, home">cj.</a>
+  <nav aria-label="Primary">
+    <ul>
+      {nav.map((item) => (
+        <li>
+          {item.contact
+            ? <button type="button" class="link" data-open-contact>{item.label}</button>
+            : <a class="link" href={item.href}>{item.label}</a>}
+        </li>
+      ))}
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    height: var(--header-h);
+    background: linear-gradient(to right, transparent calc(var(--margin-x) - 1px), var(--margin-line) calc(var(--margin-x) - 1px), var(--margin-line) var(--margin-x), transparent var(--margin-x)), var(--paper);
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; z-index: 2;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .mark {
+    font-family: var(--hand); font-weight: 600; font-size: 56px; line-height: 1;
+    text-decoration: none; color: var(--ink);
+    margin-top: -6px; letter-spacing: -0.01em;
+    display: inline-flex; align-items: center; min-height: 48px; padding-right: 8px;
+  }
+  ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 48px; }
+  nav a, nav button {
+    font-size: 18px; color: var(--ink); background: none; border: 0; padding: 0;
+    cursor: pointer; display: inline-flex; align-items: center; min-height: 44px;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1.5px; background-repeat: no-repeat; background-position: 0 calc(100% - 8px);
+  }
+  @media (hover: hover) { nav a:hover, nav button:hover { background-size: 100% 1.5px; } }
+  @media (max-width: 720px) {
+    .mark { font-size: 44px; }
+    ul { gap: 24px; }
+    nav a, nav button { font-size: 17px; }
+  }
+</style>
