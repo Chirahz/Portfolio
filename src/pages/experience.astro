@@ -1,0 +1,222 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import PenArrow from '../components/PenArrow.astro';
+import { site } from '../data/site';
+import { roles, practice, why, credentials } from '../data/experience';
+// TODO: swap for a photo of you at work (same size or larger, portrait).
+import portrait from '../assets/work/p1.jpg';
+// Text still in [brackets] is a placeholder — shown in pencil grey until it's filled in.
+const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
+---
+<Base title="Experience" description="Eight years designing digital money in Kenya — roles, practice and credentials.">
+  <div class="exp wrap">
+    <header class="top">
+      <div class="top-text">
+        <p class="hand kicker">experience</p>
+        <h1>Eight years designing <br class="br-d" />digital money in&nbsp;Kenya.</h1>
+        <p class="lede">Senior UX designer and researcher with 8+&nbsp;years advancing financial inclusion through digital financial products, from mobile money to banking apps and the platforms behind them.</p>
+        <div class="actions">
+          {site.cv
+            ? <a class="btn" href={site.cv} download>Download CV <PenArrow /></a>
+            : <button type="button" class="btn" data-open-contact>Ask for my CV <PenArrow /></button>}
+          <a class="link plain" href={site.linkedin} rel="me noopener" target="_blank">LinkedIn <PenArrow /></a>
+        </div>
+      </div>
+      <figure class="photo">
+        <span class="tape tape-l" aria-hidden="true"></span>
+        <span class="tape tape-r" aria-hidden="true"></span>
+        <Image src={portrait} alt="CJ at work" widths={[440, 880]} sizes="(max-width: 720px) 100vw, 440px" loading="eager" />
+      </figure>
+    </header>
+
+    <section class="sec" aria-labelledby="h-roles">
+      <div class="side">
+        <h2 id="h-roles" class="hand label">where I've worked</h2>
+        <p class="side-note">Roles, newest first</p>
+      </div>
+      <ol class="roles">
+        {roles.map((r) => (
+          <li>
+            <p class:list={['dates', ph(r.dates)]}>{r.dates}</p>
+            <div>
+              <h3 class={ph(r.title)}>{r.title}</h3>
+              <p class="org">{r.org}</p>
+              <p class:list={['summary', ph(r.summary)]}>{r.summary}</p>
+              {r.link && <a class="more" href={r.link.href}>{r.link.label} <PenArrow /></a>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="sec" aria-labelledby="h-do">
+      <div class="side">
+        <h2 id="h-do" class="hand label">what I do</h2>
+        <p class="side-note">Where I add most value</p>
+      </div>
+      <ul class="practice">
+        {practice.map((p) => (
+          <li>
+            <h3>{p.title}</h3>
+            <p class:list={['p-body', ph(p.body)]}>{p.body}</p>
+            <p class="methods">{p.methods}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="why" aria-labelledby="h-why">
+      <h2 id="h-why" class="hand label">why this work</h2>
+      <p class="statement">{why}</p>
+    </section>
+
+    <section class="sec" aria-labelledby="h-cred">
+      <div class="side">
+        <h2 id="h-cred" class="hand label">credentials</h2>
+        <p class="side-note">Education and certifications</p>
+      </div>
+      <ul class="creds">
+        {credentials.map((c) => <li><span>{c.name}</span><span class="from">{c.from}</span></li>)}
+      </ul>
+    </section>
+
+    <aside class="next" aria-labelledby="h-next">
+      <div>
+        <p class="hand next-label">next</p>
+        <h2 id="h-next">See the work</h2>
+        <p class="next-sub">Six projects across payments, transport, onboarding and research.</p>
+      </div>
+      <div class="next-actions">
+        <a class="btn" href="/#work">Selected work <PenArrow /></a>
+        <button type="button" class="link plain" data-open-contact>Get in touch <PenArrow /></button>
+      </div>
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .exp { padding-top: 56px; padding-bottom: 128px; }
+
+  /* ---------- Top ---------- */
+  .top { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 96px; align-items: center; }
+  .kicker { margin: 0 0 16px; font-size: 28px; line-height: 1; }
+  h1 {
+    margin: 0; font-size: clamp(44px, 4.6vw, 66px); line-height: 1.02; font-weight: 420;
+    letter-spacing: -0.025em; font-variation-settings: 'opsz' 96;
+  }
+  .lede { margin: 24px 0 0; font-size: 19px; line-height: 1.6; max-width: 620px; }
+  .actions { display: flex; align-items: center; gap: 32px; margin-top: 36px; flex-wrap: wrap; }
+  /* matches the "Button / Ink CTA — Fraunces" component: square-cornered ink block */
+  .btn {
+    display: inline-flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 28px;
+    border: 0; border-radius: 2px; background: var(--ink); color: var(--paper);
+    font-size: 16px; font-weight: 560; text-decoration: none; cursor: pointer;
+    transition: transform 160ms var(--ease-ui), opacity 150ms var(--ease-ui);
+  }
+  .btn:active { transform: scale(0.97); }
+  @media (hover: hover) { .btn:hover { opacity: 0.88; } }
+  .plain {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+    font-size: 16px; font-weight: 560; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer;
+    background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat;
+    background-size: 0% 1.5px; background-position: 0 calc(100% - 8px);
+  }
+
+  .photo { position: relative; margin: 0; }
+  .photo :global(img) {
+    width: 100%; height: auto; aspect-ratio: 440 / 540; object-fit: cover;
+    background: var(--placeholder); border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08);
+  }
+  .tape {
+    position: absolute; z-index: 1; width: 86px; height: 26px;
+    background: rgba(238, 217, 138, 0.8); mix-blend-mode: multiply;
+  }
+  :global([data-theme="dark"]) .tape { mix-blend-mode: normal; opacity: 0.7; }
+  .tape-l { left: -22px; top: 6px; transform: rotate(-24deg); }
+  .tape-r { right: -26px; top: -6px; transform: rotate(-22deg); }
+
+  /* ---------- Sections ---------- */
+  .sec {
+    display: grid; grid-template-columns: 296px minmax(0, 1fr); column-gap: 112px;
+    margin-top: 144px;
+  }
+  .label { margin: 0; font-size: 28px; line-height: 1; font-weight: 500; }
+  .side-note { margin: 10px 0 0; font-size: 15px; color: var(--pencil); }
+
+  .roles { list-style: none; margin: 0; padding: 0; }
+  .roles li {
+    display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 24px;
+    padding-bottom: 56px;
+  }
+  .roles li:last-child { padding-bottom: 0; }
+  .dates { margin: 6px 0 0; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  h3 { margin: 0; font-size: 26px; line-height: 1.25; font-weight: 450; letter-spacing: -0.01em; font-variation-settings: 'opsz' 36; }
+  .org { margin: 4px 0 0; font-size: 16px; color: var(--pen); }
+  .summary { margin: 10px 0 0; font-size: 18px; line-height: 1.55; max-width: 62ch; }
+  .more {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; min-height: 44px;
+    font-size: 15px; font-weight: 560; color: var(--ink); text-decoration: none;
+    background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat;
+    background-size: 0% 1.5px; background-position: 0 calc(100% - 10px);
+  }
+
+  .practice { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
+  .practice h3 { font-size: 24px; }
+  .p-body { margin: 12px 0 0; font-size: 17px; line-height: 1.55; }
+  .methods { margin: 12px 0 0; font-size: 15px; line-height: 1.5; color: var(--pencil); }
+
+  .why { margin-top: 144px; }
+  .statement {
+    margin: 20px 0 0; max-width: 24em;
+    font-size: clamp(28px, 2.8vw, 40px); line-height: 1.32; letter-spacing: -0.015em;
+    font-variation-settings: 'opsz' 60;
+  }
+
+  .creds { list-style: none; margin: 0; padding: 0; }
+  .creds li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 24px;
+    padding: 0 0 18px; font-size: 20px;
+  }
+  .from { font-size: 15px; color: var(--pencil); text-align: right; }
+
+  .next {
+    margin-top: 160px; padding: 48px 56px; border-radius: 18px;
+    background: var(--lift); box-shadow: var(--shadow-lift);
+    display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+  }
+  .next-label { margin: 0; font-size: 26px; line-height: 1; }
+  .next h2 { margin: 8px 0 0; font-size: clamp(36px, 3.6vw, 52px); line-height: 1.05; font-weight: 420; letter-spacing: -0.025em; }
+  .next-sub { margin: 10px 0 0; color: var(--pencil); font-size: 17px; }
+  .next-actions { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+
+  @media (hover: hover) {
+    .plain:hover, .more:hover { background-size: 100% 1.5px; }
+  }
+  .ph { color: var(--pencil); }
+  h3.ph { font-weight: 400; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1100px) {
+    .top { grid-template-columns: minmax(0, 1fr) 340px; gap: 56px; }
+    .sec { grid-template-columns: 200px minmax(0, 1fr); column-gap: 48px; }
+    .practice { grid-template-columns: 1fr; gap: 32px; }
+  }
+  @media (max-width: 720px) {
+    .br-d { display: none; }
+    .exp { padding-top: 32px; padding-bottom: 96px; }
+    .top { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+    .photo { order: -1; max-width: 300px; margin-left: 12px; }
+    .lede { font-size: 18px; }
+    .actions { gap: 24px; }
+    .sec { grid-template-columns: minmax(0, 1fr); margin-top: 96px; row-gap: 24px; }
+    .roles li { grid-template-columns: minmax(0, 1fr); gap: 4px; padding-bottom: 40px; }
+    .dates { margin: 0; }
+    h3 { font-size: 23px; }
+    .why { margin-top: 96px; }
+    .creds li { flex-direction: column; gap: 2px; font-size: 18px; }
+    .from { text-align: left; }
+    .next { margin-top: 112px; padding: 32px 24px; flex-direction: column; align-items: flex-start; }
+  }
+</style>

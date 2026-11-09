@@ -22,8 +22,8 @@
   --line: 36px;          /* ruled line spacing */
   --gutter: 96px;        /* page side margin */
   --margin-x: 64px;      /* red margin line */
-  --col: 400px;          /* carousel card */
-  --gap: 16px;
+  --gap: 32px;           /* room for the 12px hover lift on both neighbours */
+  --col: calc((min(100vw, 1440px) - 2 * var(--gutter) - 2 * var(--gap)) / 3); /* carousel card */
   --header-h: 132px;
 
   --ease-ui: cubic-bezier(0.23, 1, 0.32, 1);
@@ -63,10 +63,10 @@
 }
 
 @media (max-width: 1100px) {
-  :root { --gutter: 56px; --margin-x: 36px; --col: 340px; }
+  :root { --gutter: 56px; --margin-x: 36px; --col: 320px; --gap: 32px; }
 }
 @media (max-width: 720px) {
-  :root { --gutter: 20px; --margin-x: 10px; --col: 78vw; --gap: 12px; --line: 32px; --header-h: 76px; }
+  :root { --gutter: 20px; --margin-x: 10px; --col: 78vw; --gap: 16px; --line: 32px; --header-h: 76px; }
 }
 
 /* smooth cross-fade when the visitor flips the theme switch */
@@ -95,6 +95,8 @@ body {
   text-rendering: optimizeLegibility;
 }
 img, svg, video { display: block; max-width: 100%; }
+p, li, dd { text-wrap: pretty; }
+h1, h2, h3 { text-wrap: balance; }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
 ::selection { background: color-mix(in srgb, var(--pen) 22%, transparent); }
@@ -129,7 +131,7 @@ button { font: inherit; color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 1ms !important; animation-delay: 0ms !important;
+    animation-duration: 1ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important;
     transition-duration: 150ms !important; transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }

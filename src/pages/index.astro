@@ -18,10 +18,16 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
         Designing money<br />
         that works for <span class="circled">everyone.<svg class="ring" viewBox="0 0 270 66" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M139 5.5C84 4.2 21 8 6.2 27.8c-9 12.4 14 28 70 31.6 47 3 113 2.6 157-5.2 26-4.6 37-13.3 32.3-23.5C258.3 15.6 216 6.6 160.6 4.4 136 3.5 112 4 96 6.4"/></svg></span>
       </h1>
-      <p class="note hand" aria-hidden="true"><PenArrow direction="n" size={20} /> especially the unbanked</p>
+      <p class="note hand">
+        <svg class="note-arrow" width="16" height="30" viewBox="0 0 16 30" fill="none" aria-hidden="true">
+          <path class="shaft" pathLength="1" d="M8.4 28.6c-.5-4.6-.3-9.4-.2-14.1.1-3.2.1-6.4-.1-9.6" />
+          <path class="tip" pathLength="1" d="M2.6 10.6C4.4 8.4 6.2 6.2 8 3.6c1.7 2.4 3.5 4.6 5.4 6.8" />
+        </svg>
+        <span class="note-text">especially the unbanked</span>
+      </p>
     </section>
 
-    <p class="intro">Senior UX designer and researcher with 8+&nbsp;years advancing financial inclusion through digital financial products.</p>
+    <p class="intro"><span>Senior UX designer and researcher with</span> <span>8+&nbsp;years advancing financial inclusion</span> <span>through digital financial products.</span></p>
 
     <section class="work" id="work" aria-labelledby="work-title">
       <h2 id="work-title" class="visually-hidden">Selected work</h2>
@@ -55,7 +61,7 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
                   <span class="cta">{href ? <>Read the case <PenArrow /></> : 'Write-up soon'}</span>
                 </div>
                 <div class="frame">
-                  <Image src={p.image} alt={p.alt} widths={[400, 800]} sizes="(max-width: 720px) 78vw, 400px"
+                  <Image src={p.image} alt={p.alt} widths={[400, 800]} sizes="(max-width: 720px) 78vw, 395px"
                     loading={i < 4 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} />
                 </div>
               </Tag>
@@ -162,6 +168,13 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
   });
 
   update();
+
+  // Pen loop: only runs while the headline is on screen and the tab is visible
+  const head = document.querySelector<HTMLElement>('.head')!;
+  let onScreen = true;
+  const sync = () => head.classList.toggle('is-paused', !onScreen || document.hidden);
+  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; sync(); }).observe(head);
+  document.addEventListener('visibilitychange', sync);
 </script>
 
 <style>
@@ -199,26 +212,66 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     fill: none; stroke: var(--pen); stroke-width: 2.4; stroke-linecap: round;
     vector-effect: non-scaling-stroke;
     stroke-dasharray: 1; stroke-dashoffset: 1;
-    animation: draw 600ms var(--ease-focal) 380ms forwards;
   }
-  @keyframes draw { to { stroke-dashoffset: 0; } }
 
   .note {
-    margin: 10px 0 0;
+    margin: 8px 0 0;
     padding-left: calc(clamp(40px, 4.2vw, 60px) * 6.5);
     font-size: 26px; line-height: 1;
-    display: flex; align-items: flex-end; gap: 6px;
-    opacity: 0; transform: translateY(-4px);
-    animation: settle 400ms var(--ease-ui) 900ms forwards;
+    display: flex; align-items: flex-end; gap: 4px;
   }
-  .note :global(svg) { margin-bottom: 4px; }
-  @keyframes settle { to { opacity: 1; transform: none; } }
+  .note-arrow { flex: none; margin-bottom: 2px; overflow: visible; }
+  .note-arrow path { stroke: var(--pen); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .note-text { display: inline-block; padding: 0 4px 4px 0; clip-path: inset(0 100% 0 0); }
 
+  /*
+    The pen loop — one 8s cycle, every part on the same clock so it never drifts:
+    0–9%   circle drawn round "everyone."
+    8–13%  arrow drawn upward, then its tip
+    13–27% note written left to right
+    27–66% hold (about 3s) so it can be read
+    66–70% arrow + note lift off
+    70–78% circle erased in the direction it was drawn
+    78–100% rest on the clean headline, then again
+  */
+  .ring path      { animation: ring-loop 8s 300ms infinite both; }
+  .note .shaft    { animation: shaft-loop 8s 300ms infinite both; }
+  .note .tip      { animation: tip-loop 8s 300ms infinite both; }
+  .note-text      { animation: write-loop 8s 300ms infinite both; }
+  .head.is-paused :is(.ring path, .shaft, .tip, .note-text) { animation-play-state: paused; }
+
+  @keyframes ring-loop {
+    0%   { stroke-dashoffset: 1; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+    9%   { stroke-dashoffset: 0; }
+    70%  { stroke-dashoffset: 0; animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1); }
+    78%, 100% { stroke-dashoffset: -1; }
+  }
+  @keyframes shaft-loop {
+    0%, 8% { stroke-dashoffset: 1; opacity: 1; animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+    11%  { stroke-dashoffset: 0; }
+    66%  { stroke-dashoffset: 0; opacity: 1; animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+    70%, 100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+  @keyframes tip-loop {
+    0%, 11% { stroke-dashoffset: 1; opacity: 1; animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+    13.5% { stroke-dashoffset: 0; }
+    66%  { stroke-dashoffset: 0; opacity: 1; animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+    70%, 100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+  @keyframes write-loop {
+    0%, 13% { clip-path: inset(0 100% 0 0); opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+    27%  { clip-path: inset(0 0 0 0); }
+    66%  { clip-path: inset(0 0 0 0); opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+    70%, 100% { clip-path: inset(0 0 0 0); opacity: 0; transform: translateY(-3px); }
+  }
+
+  /* the intro's longest line ends on the same right edge as the theme switch and the arrows */
   .intro {
     margin: 6px 0 0;
+    justify-self: end; width: max-content; max-width: 100%;
     font-size: 20px; line-height: 29px; color: var(--ink);
-    max-width: 420px;
   }
+  .intro span { display: block; }
 
   /* ---------- Toolbar ---------- */
   .toolbar {
@@ -320,13 +373,12 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
   /* ---------- Responsive ---------- */
   @media (max-width: 1100px) {
     .note { padding-left: calc(clamp(40px, 4.2vw, 60px) * 6.2); }
-  }
-  @media (max-width: 900px) {
     .landing {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       grid-template-areas: "head" "intro" "work";
     }
-    .intro { margin-top: 28px; max-width: 560px; }
+    .intro { justify-self: start; width: auto; max-width: 560px; margin-top: 28px; }
+    .intro span { display: inline; }
   }
   @media (max-width: 720px) {
     .landing { grid-template-areas: "head" "work" "intro"; padding-top: 24px; }
@@ -344,7 +396,7 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     .intro { margin-top: 20px; font-size: 18px; line-height: 28px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .ring path { animation: none; stroke-dashoffset: 0; }
-    .note { animation: none; opacity: 1; transform: none; }
+    .ring path, .note .shaft, .note .tip { animation: none; stroke-dashoffset: 0; }
+    .note-text { animation: none; clip-path: none; }
   }
 </style>
