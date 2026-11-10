@@ -14,7 +14,7 @@ const isCurrent = (m: string[] = []) => m.some((x) => (x === '/' ? path === '/' 
             {item.contact
               ? <button type="button" data-open-contact>{item.label}<PenStroke /></button>
               : <a href={item.href} aria-current={isCurrent(item.match) ? 'page' : undefined}
-                  class:list={[{ 'is-inked': isCurrent(item.match), 'pen-draw-in': isCurrent(item.match) }]}>{item.label}<PenStroke /></a>}
+                  class:list={[{ 'is-inked': isCurrent(item.match) && item.inkWhenCurrent !== false, 'pen-draw-in': isCurrent(item.match) && item.inkWhenCurrent !== false }]}>{item.label}<PenStroke /></a>}
           </li>
         ))}
       </ul>

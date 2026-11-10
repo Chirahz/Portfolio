@@ -18,7 +18,8 @@ export const site = {
 };
 
 export const nav = [
-  { href: '/#work', label: 'Work', match: ['/', '/work'] },
+  // Work is still marked as the current page for screen readers, but its pen stroke only shows on hover.
+  { href: '/#work', label: 'Work', match: ['/', '/work'], inkWhenCurrent: false },
   { href: '/experience', label: 'Experience', match: ['/experience'] },
   { href: '#contact', label: 'Contact', contact: true, match: [] as string[] },
 ];
