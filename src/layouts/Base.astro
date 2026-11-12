@@ -36,6 +36,13 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') doc.documentElement.dataset.theme = t; } catch (e) {}
       }
       apply(document);
+      // first visit to the home page: start in the zoomed-out overview (skipped for reduced motion)
+      try {
+        if (location.pathname === '/' && !sessionStorage.getItem('intro-seen') &&
+            !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.classList.add('intro');
+        }
+      } catch (e) {}
       if (!window.__themeHook) {
         window.__themeHook = true;
         // keep the visitor's theme on the incoming page before it is shown
@@ -58,9 +65,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <Header />
-  <main id="main"><slot /></main>
-  {footer && <Footer />}
+  <slot name="overview" />
+  <div class="shell">
+    <Header />
+    <main id="main"><slot /></main>
+    {footer && <Footer />}
+  </div>
   <ContactSheet />
   <script>import '../scripts/smooth'; import '../scripts/transitions';</script>
 </body>
