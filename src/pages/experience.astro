@@ -43,7 +43,7 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
               <h3 class={ph(r.title)}>{r.title}</h3>
               <p class="org">{r.org}</p>
               <p class:list={['summary', ph(r.summary)]}>{r.summary}</p>
-              {r.link && <a class="more" href={r.link.href}>{r.link.label} <PenArrow /></a>}
+              {r.link && <a class="more link" href={r.link.href}>{r.link.label} <PenArrow /></a>}
             </div>
           </li>
         ))}
@@ -118,9 +118,8 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   @media (hover: hover) { .btn:hover { opacity: 0.88; } }
   .plain {
     display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
-    font-size: 16px; font-weight: 560; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer;
-    background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat;
-    background-size: 0% 1.5px; background-position: 0 calc(100% - 8px);
+    font-size: 16px; font-weight: 560; color: var(--ink); background-color: transparent; border: 0; padding: 0; cursor: pointer;
+    --pen-y: calc(100% - 6px);
   }
 
   .photo { position: relative; margin: 0; }
@@ -158,8 +157,7 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   .more {
     display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; min-height: 44px;
     font-size: 15px; font-weight: 560; color: var(--ink); text-decoration: none;
-    background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat;
-    background-size: 0% 1.5px; background-position: 0 calc(100% - 10px);
+    --pen-y: calc(100% - 8px);
   }
 
   .practice { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
@@ -192,7 +190,7 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   .next-actions { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
 
   @media (hover: hover) {
-    .plain:hover, .more:hover { background-size: 100% 1.5px; }
+    /* pen stroke comes from the global .link style */
   }
   .ph { color: var(--pencil); }
   h3.ph { font-weight: 400; }

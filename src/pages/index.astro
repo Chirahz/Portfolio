@@ -387,6 +387,12 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui);
   }
   div.card-hit .cta { color: var(--pencil); }
+  /* "Read the case" gets the pen stroke too when its card is hovered */
+  a.card-hit .cta { background: var(--pen-line) no-repeat 0 100% / 0% 7px; padding-bottom: 5px; transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui), background-size 160ms var(--ease-ui); }
+  @media (hover: hover) and (pointer: fine) {
+    a.card-hit:hover .cta { background-size: 100% 7px; transition: opacity 200ms var(--ease-ui) 40ms, transform 260ms var(--ease-ui) 40ms, background-size 420ms var(--ease-focal) 120ms; }
+  }
+  a.card-hit:focus-visible .cta { background-size: 100% 7px; }
 
   .frame { aspect-ratio: 400 / 384; overflow: hidden; background: var(--placeholder); border-radius: 0; transition: border-radius 220ms var(--ease-ui); }
   .frame :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-focal); user-select: none; -webkit-user-drag: none; }

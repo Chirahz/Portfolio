@@ -252,7 +252,7 @@ const heroImg = await getImage({ src: img, width: 1920, format: 'webp' });
 
 <style>
   .case { padding-top: 40px; padding-bottom: 128px; }
-  .back { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; color: var(--pencil); min-height: 44px; }
+  .back { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; color: var(--pencil); min-height: 44px; --pen-y: calc(100% - 9px); }
   @media (hover: hover) { .back:hover { color: var(--ink); } }
 
   .intro { margin-top: 32px; max-width: 1040px; }
@@ -342,6 +342,9 @@ const heroImg = await getImage({ src: img, width: 1920, format: 'webp' });
   .tags { margin: 0; font-size: 16px; color: var(--pencil); }
   .cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 24px; font-size: 17px; color: var(--pen); }
   div.next-card .cta { color: var(--pencil); }
+  a.next-card .cta { background: var(--pen-line) no-repeat 0 100% / 0% 7px; padding-bottom: 5px; transition: background-size 160ms var(--ease-ui); }
+  @media (hover: hover) and (pointer: fine) { a.next-card:hover .cta { background-size: 100% 7px; transition: background-size 420ms var(--ease-focal) 80ms; } }
+  a.next-card:focus-visible .cta { background-size: 100% 7px; }
   .next-img { aspect-ratio: 480 / 320; overflow: hidden; border-radius: 4px; background: var(--placeholder); transition: border-radius 220ms var(--ease-ui); }
   .next-img :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-focal); }
   @media (hover: hover) {

@@ -124,15 +124,24 @@ button { font: inherit; color: inherit; }
 }
 .skip:focus { top: 16px; }
 
-/* text link with a pen underline */
+/* Text links: hovering draws the same blue pen stroke as the nav and the filters.
+   It wipes in left to right (like a pen moving) and lifts off quickly. */
+:root { --pen-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 6' preserveAspectRatio='none'%3E%3Cpath d='M1.2 3.9C9.5 2.4 22.4 1.9 38.8 3.1' fill='none' stroke='%232B4C9B' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pen-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 6' preserveAspectRatio='none'%3E%3Cpath d='M1.2 3.9C9.5 2.4 22.4 1.9 38.8 3.1' fill='none' stroke='%2393ABEB' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); } }
+:root[data-theme="dark"] { --pen-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 6' preserveAspectRatio='none'%3E%3Cpath d='M1.2 3.9C9.5 2.4 22.4 1.9 38.8 3.1' fill='none' stroke='%2393ABEB' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); }
 .link {
   text-decoration: none;
-  background-image: linear-gradient(currentColor, currentColor);
-  background-size: 0% 1.5px; background-repeat: no-repeat; background-position: 0 100%;
-  transition: background-size 240ms var(--ease-ui);
-  padding-bottom: 2px;
+  background-image: var(--pen-line);
+  background-repeat: no-repeat; background-position: 0 var(--pen-y, 100%);
+  background-size: 0% 7px;
+  padding-bottom: 4px;
+  transition: background-size 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-@media (hover: hover) { .link:hover { background-size: 100% 1.5px; } }
+@media (hover: hover) and (pointer: fine) {
+  .link:hover { background-size: 100% 7px; transition: background-size 420ms cubic-bezier(0.16, 1, 0.3, 1); }
+}
+.link:focus-visible { background-size: 100% 7px; }
+@media (prefers-reduced-motion: reduce) { .link, .link:hover { transition: none; } }
 
 /* pen-drawn arrow used in "Read the case" etc. */
 .pen-arrow { width: 14px; height: 14px; flex: none; }
