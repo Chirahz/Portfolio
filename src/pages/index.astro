@@ -10,11 +10,6 @@ import { projects, platformLabel, projectHref, type Platform } from '../data/pro
 const heroSrc = Object.fromEntries(await Promise.all(projects.filter((p) => p.live).map(async (p) =>
   [p.slug, (await getImage({ src: p.image, width: 1920, format: 'webp' })).src])));
 
-// images for the two side cards of the intro overview
-const ovCase = await getImage({ src: projects[0].image, width: 960, format: 'webp' });
-const ovCase2 = await getImage({ src: projects[1].image, width: 640, format: 'webp' });
-const ovExp = await getImage({ src: projects[4].image, width: 800, format: 'webp' });
-
 const filters: { key: 'all' | Platform; label: string; count: number }[] = [
   { key: 'all', label: 'all', count: projects.length },
   ...(['mobile', 'web', 'research'] as Platform[]).map((k) => ({
@@ -23,20 +18,6 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
 ];
 ---
 <Base footer={false}>
-  <div class="overview" slot="overview" aria-hidden="true">
-    <div class="ov-page ov-left">
-      <div class="ov-head"><span class="ov-mark">cj.</span><span class="ov-name">CJ — UX</span></div>
-      <p class="ov-title">cases</p>
-      <div class="ov-cases">
-        <figure><figcaption>KCB × PayPal</figcaption><img src={ovCase.src} alt="" /></figure>
-        <figure><figcaption>Safiri</figcaption><img src={ovCase2.src} alt="" /></figure>
-      </div>
-    </div>
-    <div class="ov-page ov-right">
-      <div class="ov-head"><span class="ov-mark">cj.</span><span class="ov-name">CJ — UX</span></div>
-      <p class="ov-title">experience</p>
-      <img class="ov-portrait" src={ovExp.src} alt="" />
-    </div>
   </div>
   <div class="landing wrap">
     <section class="head" aria-labelledby="hl">
@@ -202,58 +183,6 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
 
     update();
 
-    // ---- Intro overview: three page cards on the desk, then zoom into this one ----
-    const html = document.documentElement;
-    if (html.classList.contains('intro')) {
-      window.lenis?.stop();
-      const shell = document.querySelector<HTMLElement>('.shell')!;
-      const left = document.querySelector<HTMLElement>('.ov-left')!;
-      const right = document.querySelector<HTMLElement>('.ov-right')!;
-      const s = parseFloat(getComputedStyle(html).getPropertyValue('--ov-s')) || 0.28;
-      const gap = innerWidth * 0.032;
-      const off = innerWidth * s + gap;              // card centre-to-centre while zoomed out
-      const move = 'cubic-bezier(0.77, 0, 0.175, 1)';   // camera move: soft start, soft landing
-      const focal = 'cubic-bezier(0.16, 1, 0.3, 1)';
-      const zoomAt = 1300, zoomFor = 1250;
-      const anims: Animation[] = [];
-      const rise = (el: HTMLElement, base: string, delay: number) => anims.push(el.animate(
-        [{ transform: `translate3d(0, 6vh, 0) ${base}`, opacity: 0 }, { transform: `translate3d(0, 0, 0) ${base}`, opacity: 1 }],
-        { duration: 800, delay, easing: focal, fill: 'both' }));
-      // 1. the three pages land on the desk
-      rise(left, `translateX(${-off}px) scale(${s})`, 0);
-      rise(shell, `scale(${s})`, 70);
-      rise(right, `translateX(${off}px) scale(${s})`, 140);
-      // 2. the camera moves in on the middle page; its neighbours slide out of frame with it
-      const zoom = { duration: zoomFor, delay: zoomAt, easing: move, fill: 'forwards' as FillMode, composite: 'replace' as CompositeOperation };
-      const big = innerWidth + gap / s;
-      const zl = left.animate([{ transform: `translate3d(${-off}px, 0, 0) scale(${s})` }, { transform: `translate3d(${-big}px, 0, 0) scale(1)` }], zoom);
-      // transform only: animating the shadow would repaint a full-page layer every frame
-      const zc = shell.animate([{ transform: `translate3d(0, 0, 0) scale(${s})` }, { transform: 'translate3d(0, 0, 0) scale(1)' }], zoom);
-      const zr = right.animate([{ transform: `translate3d(${off}px, 0, 0) scale(${s})` }, { transform: `translate3d(${big}px, 0, 0) scale(1)` }], zoom);
-      anims.push(zl, zc, zr);
-
-      let done = false;
-      const finish = () => {
-        if (done) return; done = true;
-        anims.forEach((a) => a.cancel());
-        html.classList.remove('intro');
-        // the pen loop starts fresh the moment the page is full size
-        document.querySelectorAll('.head :is(.ring, .ring path, .shaft, .tip, .note-text)')
-          .forEach((el) => el.getAnimations().forEach((a) => { a.currentTime = 0; }));
-        try { sessionStorage.setItem('intro-seen', '1'); } catch {}
-        window.lenis?.start();
-        removeEventListener('wheel', skip); removeEventListener('keydown', skip); removeEventListener('pointerdown', skip); removeEventListener('touchstart', skip);
-      };
-      // any input skips straight to the page
-      const skip = () => { anims.forEach((a) => a.finish()); finish(); };
-      zc.finished.then(finish).catch(() => {});
-      addEventListener('wheel', skip, { passive: true, signal });
-      addEventListener('keydown', skip, { signal });
-      addEventListener('pointerdown', skip, { signal });
-      addEventListener('touchstart', skip, { passive: true, signal });
-      signal.addEventListener('abort', finish);
-    }
-
     // warm the case hero as soon as a card shows intent (hover, focus or touch)
     const warmed = new Set<string>();
     const warm = (e: Event) => {
@@ -279,32 +208,6 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
 </script>
 
 <style>
-  /* ---------- Intro overview side cards (full-size pages, scaled by the script) ---------- */
-  .ov-page {
-    position: fixed; inset: 0; overflow: hidden; z-index: 1;
-    background-color: var(--paper); background-image: var(--paper-image); background-position: 0 0, 0 var(--header-h);
-    box-shadow: 0 2px 6px rgba(20, 16, 8, 0.12), 0 40px 80px rgba(20, 16, 8, 0.18);
-    transform-origin: 50% 50%; opacity: 0; will-change: transform, opacity; backface-visibility: hidden;
-    padding: 0 var(--gutter);
-  }
-  .ov-head {
-    height: var(--header-h); display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 1px solid var(--rule-strong);
-  }
-  .ov-mark { font-family: var(--hand); font-weight: 600; font-size: 56px; line-height: 1; }
-  .ov-name { font-size: 18px; }
-  .ov-title {
-    margin: 4vh 0 0; font-size: clamp(56px, 11vw, 190px); line-height: 0.95; font-weight: 400;
-    letter-spacing: -0.035em; font-variation-settings: 'opsz' 144;
-  }
-  .ov-cases { position: absolute; left: var(--gutter); right: 0; bottom: 6vh; display: flex; gap: var(--gap); }
-  .ov-cases figure { margin: 0; flex: none; }
-  .ov-cases figure:first-child { width: 58vw; }
-  .ov-cases figure:last-child { width: 40vw; }
-  .ov-cases figcaption { font-size: 22px; margin-bottom: 14px; }
-  .ov-cases img { width: 100%; height: 44vh; object-fit: cover; }
-  .ov-portrait { position: absolute; left: var(--gutter); bottom: 6vh; width: 40vw; height: 46vh; object-fit: cover; }
-
   /* ---------- Layout ---------- */
   .landing {
     display: grid;

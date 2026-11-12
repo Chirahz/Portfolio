@@ -5,7 +5,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isCurrent = (m: string[] = []) => m.some((x) => (x === '/' ? path === '/' : path === x || path.startsWith(x + '/')));
 ---
 <header class="site-header wrap" transition:name="site-header">
-  <a class="mark" href="/" aria-label="CJ — UX, home">cj.</a>
+  <a class="mark" href="/" aria-label="CJ — UX: show all pages" aria-haspopup="dialog">cj.</a>
   <div class="right">
     <nav aria-label="Primary">
       <ul>

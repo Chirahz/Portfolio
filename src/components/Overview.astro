@@ -1,0 +1,406 @@
+---
+// The page overview: three page cards on a desk — cases | work | experience.
+// Opens from the "cj." logo (any page) and plays once as the intro on the home page.
+// The page you're on is the *live* page shrunk into its slot; the other two are
+// previews built to match the top of their real pages, so zooming into one and
+// then loading it reads as one continuous move.
+import { getImage } from 'astro:assets';
+import { getEntry } from 'astro:content';
+import { projects, platformLabel } from '../data/projects';
+import { site } from '../data/site';
+import portraitSrc from '../assets/work/p1.jpg';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const current = path === '/' ? 'work' : path.startsWith('/work/') ? 'cases' : path === '/experience' ? 'experience' : '';
+
+const caseSlug = path.startsWith('/work/') ? path.slice(6) : 'kcb-paypal';
+const kase = (await getEntry('cases', caseSlug)) ?? (await getEntry('cases', 'kcb-paypal'))!;
+const d = kase.data;
+
+const img = (src: ImageMetadata, width: number) => getImage({ src, width, format: 'webp' }).then((r) => r.src);
+const workImgs = await Promise.all(projects.slice(0, 4).map((p) => img(p.image, 800)));
+const caseHero = await img(d.hero, 1920);
+const portrait = await img(portraitSrc, 880);
+
+const slots = [
+  { key: 'cases', k: -1, href: `/work/${kase.id}`, label: 'cases', name: `Case study: ${d.title}` },
+  { key: 'work', k: 0, href: '/', label: 'work', name: 'Work — home' },
+  { key: 'experience', k: 1, href: '/experience', label: 'experience', name: 'Experience' },
+];
+const headerNav = ['Work', 'Experience', 'Contact'];
+---
+<div class="overview" data-overview data-current={current} role="dialog" aria-modal="true" aria-label="All pages" tabindex="-1">
+  {slots.map((sl) => (
+    <a class="ov-card" href={sl.href} data-key={sl.key} data-k={sl.k} style={`--k:${sl.k}`}
+       aria-label={sl.key === current ? `${sl.name} (this page)` : sl.name}
+       aria-current={sl.key === current ? 'page' : undefined}>
+      <div class="pv" aria-hidden="true">
+        <div class="pv-head">
+          <span class="pv-mark">cj.</span>
+          <span class="pv-nav">{headerNav.map((n) => <span>{n}</span>)}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.6 14.6c-1 .4-2.1.6-3.2.6-4.7 0-8.3-3.8-8.3-8.4 0-1.2.2-2.3.7-3.3C5.4 4.6 3 7.8 3 11.6c0 5 4.1 9.2 9.2 9.2 3.4 0 6.3-1.9 7.9-4.6"/></svg>
+          </span>
+        </div>
+
+        {sl.key === 'work' && (
+          <div class="pv-body pv-work">
+            <p class="pv-h1">Designing money<br />that works for <span class="pv-every">everyone.</span></p>
+            <p class="pv-intro">Senior UX designer and researcher with 8+&nbsp;years advancing financial inclusion through digital financial products.</p>
+            <p class="pv-filters"><span class="on">all 6</span><span>mobile 3</span><span>web 2</span><span>research 1</span></p>
+            <div class="pv-rail">
+              {projects.slice(0, 4).map((p, i) => (
+                <div class="pv-card">
+                  <p class="pv-t">{p.title}</p>
+                  <p class="pv-tags">{platformLabel[p.platform]} · {p.field}</p>
+                  <img src={workImgs[i]} alt="" loading="lazy" decoding="async" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {sl.key === 'cases' && (
+          <div class="pv-body pv-case">
+            <p class="pv-back">← All projects</p>
+            <p class="pv-case-h1">{d.title}</p>
+            <p class="pv-statement">{d.statement}</p>
+            <div class="pv-meta">
+              <div><span>Client</span>{d.client}</div><div><span>My role</span>{d.role}</div>
+              <div><span>Year</span>{d.year}</div><div><span>Scope</span>{d.scope}</div>
+            </div>
+            <img class="pv-hero" src={caseHero} alt="" loading="lazy" decoding="async" />
+          </div>
+        )}
+
+        {sl.key === 'experience' && (
+          <div class="pv-body pv-exp">
+            <div>
+              <p class="pv-kicker">experience</p>
+              <p class="pv-exp-h1">Eight years designing <br />digital money in&nbsp;Kenya.</p>
+              <p class="pv-lede">Senior UX designer and researcher with 8+&nbsp;years advancing financial inclusion through digital financial products, from mobile money to banking apps and the platforms behind them.</p>
+              <p class="pv-actions"><span class="pv-btn">{site.cv ? 'Download CV' : 'Ask for my CV'} ↗</span><span>LinkedIn ↗</span></p>
+            </div>
+            <div class="pv-photo"><span></span><span></span><img src={portrait} alt="" loading="lazy" decoding="async" /></div>
+          </div>
+        )}
+      </div>
+    </a>
+  ))}
+  {slots.map((sl) => <p class="ov-label" style={`--k:${sl.k}`} aria-hidden="true">{sl.label}</p>)}
+  <button type="button" class="ov-close" data-ov-close>
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4.5 4.8c3.6 3.4 7.2 7 11 10.6"/><path d="M15.3 4.6c-3.5 3.6-7.1 7.3-10.7 10.9"/></svg>
+    Back to page
+  </button>
+</div>
+
+<script>
+  import { onPage, reducedMotion } from '../scripts/page';
+
+  const MOVE = 'cubic-bezier(0.77, 0, 0.175, 1)';   // camera: soft start, soft landing
+  const FOCAL = 'cubic-bezier(0.16, 1, 0.3, 1)';
+  const UI = 'cubic-bezier(0.23, 1, 0.32, 1)';
+
+  // Back/forward cache can restore a page mid-zoom; always come back to a clean page.
+  addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
+
+  onPage((signal) => {
+    const ov = document.querySelector<HTMLElement>('[data-overview]');
+    const shell = document.querySelector<HTMLElement>('.shell');
+    const html = document.documentElement;
+    if (!ov || !shell) return;
+    const current = ov.dataset.current || '';
+    const cards = [...ov.querySelectorAll<HTMLAnchorElement>('.ov-card')];
+    const labels = [...ov.querySelectorAll<HTMLElement>('.ov-label')];
+    const closeBtn = ov.querySelector<HTMLButtonElement>('[data-ov-close]')!;
+    const cur = cards.find((c) => c.dataset.key === current);
+    const curK = cur ? Number(cur.dataset.k) : 0;
+
+    let state: 'closed' | 'opening' | 'open' | 'zooming' = 'closed';
+    let anims: Animation[] = [];
+    let y = 0;
+    let opener: HTMLElement | null = null;
+
+    const metrics = () => {
+      const s = parseFloat(getComputedStyle(html).getPropertyValue('--ov-s')) || 0.28;
+      const vw = innerWidth;
+      const gap = vw * 0.032;
+      return { s, unit: vw + gap / s };   // distance between card centres at full size
+    };
+    // where slot k sits for a camera centred on slot c at zoom z
+    const pose = (k: number, c: number, z: number) => {
+      const { unit } = metrics();
+      return `translate3d(${((k - c) * unit * z).toFixed(2)}px, 0, 0) scale(${z})`;
+    };
+    const items = () => [
+      ...cards.filter((c) => c !== cur).map((el) => ({ el, k: Number(el.dataset.k) })),
+      ...(cur ? [{ el: cur, k: curK }] : []),
+      { el: shell, k: curK },
+    ];
+
+    // pin the live page where it is, so it can be scaled like a card
+    const freeze = () => {
+      y = window.scrollY;
+      const h = shell.offsetHeight, vh = innerHeight;
+      Object.assign(shell.style, {
+        position: 'fixed', left: '0', right: '0', top: `${-y}px`, height: `${h}px`, zIndex: '1',
+        transformOrigin: `50% ${y + vh / 2}px`,
+        clipPath: `inset(${y}px 0 ${Math.max(0, h - y - vh)}px 0)`,
+      });
+      shell.classList.add('is-frozen');
+      shell.inert = true;
+      window.lenis?.stop();
+      html.classList.add('ov-open');
+    };
+    const unfreeze = () => {
+      ['position', 'left', 'right', 'top', 'height', 'zIndex', 'transformOrigin', 'clipPath', 'transform'].forEach((p) => (shell.style as any)[p] = '');
+      shell.classList.remove('is-frozen');
+      shell.inert = false;
+      html.classList.remove('ov-open', 'ov-settled');
+      // restart smooth scroll first: while stopped it locks overflow and the jump back would be ignored
+      window.lenis?.start();
+      window.scrollTo(0, y);
+      window.lenis?.scrollTo(y, { immediate: true, force: true });
+    };
+    const stopAll = () => { anims.forEach((a) => a.cancel()); anims = []; };
+    const run = (from: { c: number; z: number }, to: { c: number; z: number }, duration: number, delay = 0) => {
+      stopAll();
+      const opts = { duration: reducedMotion() ? 0 : duration, delay: reducedMotion() ? 0 : delay, easing: MOVE, fill: 'both' as FillMode };
+      anims = items().map(({ el, k }) => el.animate([{ transform: pose(k, from.c, from.z) }, { transform: pose(k, to.c, to.z) }], opts));
+      return anims[anims.length - 1].finished;
+    };
+    // hover rings only after the pointer actually moves over the desk, so the card that was
+    // under the cursor when the zoom began doesn't light up on its own
+    const setSettled = (on: boolean) => {
+      html.classList.toggle('ov-settled', on);
+      html.classList.remove('ov-pointer');
+      if (on) ov.addEventListener('pointermove', () => html.classList.add('ov-pointer'), { once: true });
+    };
+
+    const open = async (viaKeyboard = false) => {
+      if (state !== 'closed' || !cur) return;
+      state = 'opening';
+      opener = document.activeElement as HTMLElement;
+      freeze();
+      const { s } = metrics();
+      await run({ c: curK, z: 1 }, { c: 0, z: s }, 950).catch(() => {});
+      if (state !== 'opening') return;
+      state = 'open';
+      setSettled(true);
+      // keyboard users land on this page's card; pointer users get no ring until they press Tab
+      if (viaKeyboard) cur.focus({ preventScroll: true }); else ov.focus({ preventScroll: true });
+    };
+
+    const select = async (card: HTMLAnchorElement) => {
+      if (state !== 'open') return;
+      state = 'zooming';
+      setSettled(false);
+      const { s } = metrics();
+      const k = Number(card.dataset.k);
+      await run({ c: 0, z: s }, { c: k, z: 1 }, 1000).catch(() => {});
+      if (card === cur) {
+        stopAll(); unfreeze(); state = 'closed';
+        if (opener?.isConnected) opener.focus({ preventScroll: true });
+      } else {
+        // the preview now fills the screen exactly like the top of that page; load it underneath
+        location.assign(card.href);
+      }
+    };
+
+    cards.forEach((c) => c.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;  // new-tab clicks behave normally
+      e.preventDefault();
+      select(c);
+    }));
+    closeBtn.addEventListener('click', () => cur && select(cur));
+    ov.addEventListener('click', (e) => { if (e.target === ov && cur) select(cur); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && state === 'open' && cur) { e.preventDefault(); select(cur); }
+      // keep Tab inside the overview while it is open
+      if (e.key === 'Tab' && state === 'open') {
+        const f = [...cards, closeBtn];
+        const i = f.indexOf(document.activeElement as any);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+      }
+    }, { signal });
+
+    // the logo opens the overview
+    document.querySelector<HTMLAnchorElement>('.site-header .mark')?.addEventListener('click', (e) => {
+      if (!cur || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      open(e.detail === 0);   // detail 0 = activated with Enter/Space
+    });
+
+    // ---- First visit to the home page: the overview is the intro ----
+    if (html.classList.contains('intro') && cur) {
+      state = 'opening';
+      freeze();
+      html.classList.remove('intro');           // inline styles + .ov-open now hold the same picture
+      const { s } = metrics();
+      const others = cards.filter((c) => c !== cur);
+      const rise = (el: HTMLElement, k: number, delay: number) => el.animate(
+        [{ transform: `translate3d(0, 6vh, 0) ${pose(k, 0, s)}`, opacity: 0 }, { transform: `translate3d(0, 0, 0) ${pose(k, 0, s)}`, opacity: 1 }],
+        { duration: 800, delay, easing: FOCAL, fill: 'both' });
+      const intro = [
+        rise(others[0], Number(others[0].dataset.k), 0),
+        rise(shell, curK, 70),
+        rise(cur, curK, 70),
+        rise(others[1], Number(others[1].dataset.k), 140),
+      ];
+      anims = intro;
+      let skipped = false;
+      const done = () => { try { sessionStorage.setItem('intro-seen', '1'); } catch {} };
+      const go = () => {
+        if (skipped) return; skipped = true;
+        removeEventListener('wheel', skip); removeEventListener('keydown', skip); removeEventListener('pointerdown', skip); removeEventListener('touchstart', skip);
+        state = 'open';
+        select(cur).then(() => {
+          done();
+          document.querySelectorAll('.head :is(.ring, .ring path, .shaft, .tip, .note-text)')
+            .forEach((el) => el.getAnimations().forEach((a) => { a.currentTime = 0; }));
+        });
+      };
+      const skip = () => { intro.forEach((a) => a.finish()); go(); };
+      const timer = setTimeout(go, 1300);
+      addEventListener('wheel', skip, { passive: true, signal });
+      addEventListener('keydown', skip, { signal });
+      addEventListener('pointerdown', skip, { signal });
+      addEventListener('touchstart', skip, { passive: true, signal });
+      signal.addEventListener('abort', () => { clearTimeout(timer); done(); });
+    }
+
+    signal.addEventListener('abort', () => { if (state !== 'closed') { stopAll(); unfreeze(); } });
+  });
+</script>
+
+<style>
+  /* ---------- Desk ---------- */
+  .overview { display: none; }
+  :global(html:is(.intro, .ov-open)) .overview {
+    display: block; position: fixed; inset: 0; z-index: 2; outline: none;
+  }
+  :global(html:is(.intro, .ov-open)), :global(html:is(.intro, .ov-open) body) { overflow: hidden; }
+  :global(html:is(.intro, .ov-open) body) { background: var(--desk); }
+
+  /* the live page while it is a card */
+  :global(html.intro .shell) {
+    position: fixed; inset: 0; overflow: hidden; z-index: 1;
+    transform: scale(var(--ov-s)); transform-origin: 50% 50%;
+  }
+  :global(html:is(.intro, .ov-open) .shell) {
+    background-color: var(--paper); background-image: var(--paper-image); background-position: 0 0, 0 var(--header-h);
+    box-shadow: 0 2px 6px rgba(20, 16, 8, 0.12), 0 40px 80px rgba(20, 16, 8, 0.18);
+    will-change: transform;
+  }
+  :global(html.intro .head :is(.ring, .ring path, .shaft, .tip, .note-text)) { animation-play-state: paused; }
+  :global(html:is(.intro, .ov-open) .head :is(.ring, .note)) { visibility: hidden; }
+
+  /* ---------- Cards ---------- */
+  .ov-card {
+    position: fixed; inset: 0; display: block; overflow: hidden; color: var(--ink); text-decoration: none;
+    background-color: var(--paper); background-image: var(--paper-image); background-position: 0 0, 0 var(--header-h);
+    box-shadow: 0 2px 6px rgba(20, 16, 8, 0.12), 0 40px 80px rgba(20, 16, 8, 0.18);
+    transform: translate3d(calc(var(--k) * (var(--ov-s) * 100vw + 3.2vw)), 0, 0) scale(var(--ov-s));
+    transform-origin: 50% 50%; will-change: transform; backface-visibility: hidden;
+    cursor: pointer; outline: none;
+  }
+  /* the card for the page you're on is only a hit area over the live page */
+  .ov-card[aria-current="page"] { background: transparent; box-shadow: none; z-index: 1; }
+  .ov-card[aria-current="page"] .pv { visibility: hidden; }
+  .ov-card::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 0 calc(3px / var(--ov-s)) var(--pen); opacity: 0;
+    transition: opacity 200ms var(--ease-ui);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    :global(html.ov-settled.ov-pointer) .ov-card:hover::after { opacity: 0.55; }
+  }
+  .ov-card:focus-visible::after { opacity: 1; }
+
+  .ov-label {
+    position: fixed; z-index: 3; margin: 0; pointer-events: none;
+    left: calc(50% + var(--k) * (var(--ov-s) * 100vw + 3.2vw));
+    top: calc(50% + var(--ov-s) * 50vh + 14px);
+    transform: translate3d(-50%, 4px, 0);
+    font-family: var(--hand); font-size: 28px; line-height: 1; color: #F7F3EB;
+    opacity: 0; transition: opacity 180ms var(--ease-ui), transform 260ms var(--ease-ui);
+  }
+  .ov-close {
+    position: fixed; z-index: 3; top: 20px; right: var(--gutter);
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px;
+    border: 0; border-radius: 999px; background: rgba(247, 243, 235, 0.14); color: #F7F3EB;
+    font: inherit; font-size: 16px; cursor: pointer;
+    opacity: 0; pointer-events: none; transition: opacity 180ms var(--ease-ui), background 150ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) { .ov-close:hover { background: rgba(247, 243, 235, 0.24); } }
+  :global(html.ov-settled) .ov-label { opacity: 1; transform: translate3d(-50%, 0, 0); transition-delay: 60ms; }
+  :global(html.ov-settled) .ov-close { opacity: 1; pointer-events: auto; }
+
+  /* ---------- Previews: built at full size to match the top of each page ---------- */
+  .pv { position: absolute; inset: 0; }
+  .pv-head {
+    height: var(--header-h); padding: 0 var(--gutter); display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--rule-strong);
+    background: linear-gradient(to right, transparent calc(var(--margin-x) - 1px), var(--margin-line) calc(var(--margin-x) - 1px), var(--margin-line) var(--margin-x), transparent var(--margin-x)), var(--paper);
+  }
+  .pv-mark { font-family: var(--hand); font-weight: 600; font-size: 56px; line-height: 1; margin-top: -6px; }
+  .pv-nav { display: flex; align-items: center; gap: 48px; font-size: 18px; }
+  .pv-nav svg { margin-left: -16px; margin-right: -11px; padding: 11px; box-sizing: content-box; }
+  .pv-body { padding: 0 var(--gutter); }
+
+  .pv-work { display: grid; grid-template-columns: var(--col) var(--col) minmax(0, 1fr); column-gap: var(--gap); padding-top: 28px; }
+  .pv-h1 { grid-column: 1 / 3; margin: 0; font-size: clamp(40px, 4.2vw, 60px); line-height: 0.96; font-weight: 420; letter-spacing: -0.025em; font-variation-settings: 'opsz' 72; }
+  .pv-every { margin-left: 0.36em; }
+  .pv-intro { grid-column: 3; justify-self: end; max-width: 372px; margin: 6px 0 0; font-size: 20px; line-height: 29px; }
+  .pv-filters { grid-column: 1 / -1; display: flex; gap: 28px; margin: 36px 0 0; height: 48px; align-items: center; font-size: 18px; color: var(--pencil); }
+  .pv-filters .on { color: var(--ink); text-decoration: underline 2px var(--pen); text-underline-offset: 8px; }
+  .pv-rail { grid-column: 1 / -1; display: flex; gap: var(--gap); margin-top: 16px; }
+  .pv-card { flex: 0 0 var(--col); }
+  .pv-t { margin: 0; font-size: 22px; line-height: 28px; font-weight: 560; }
+  .pv-tags { margin: 0 0 12px; font-size: 15px; line-height: 22px; color: var(--pencil); }
+  .pv-card img { width: 100%; aspect-ratio: 400 / 384; object-fit: cover; background: var(--placeholder); }
+
+  .pv-case { padding-top: 40px; }
+  .pv-back { margin: 0; font-size: 17px; color: var(--pencil); min-height: 44px; display: flex; align-items: center; }
+  .pv-case-h1 { margin: 32px 0 0; font-size: clamp(52px, 6.7vw, 96px); line-height: 1; letter-spacing: -0.03em; font-variation-settings: 'opsz' 144; }
+  .pv-statement { margin: 24px 0 0; font-size: clamp(20px, 1.8vw, 26px); line-height: 1.4; max-width: 820px; }
+  .pv-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin-top: 48px; max-width: 1248px; font-size: 17px; line-height: 1.45; }
+  .pv-meta span { display: block; font-size: 15px; color: var(--pencil); margin-bottom: 4px; }
+  .pv-hero { display: block; width: 100%; margin-top: 64px; aspect-ratio: 1248 / 702; object-fit: cover; object-position: 50% 40%; border-radius: 4px; background: var(--placeholder); }
+
+  .pv-exp { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 96px; align-items: center; padding-top: 56px; }
+  .pv-kicker { margin: 0 0 16px; font-family: var(--hand); color: var(--pen); font-size: 28px; line-height: 1; }
+  .pv-exp-h1 { margin: 0; font-size: clamp(44px, 4.6vw, 66px); line-height: 1.02; font-weight: 420; letter-spacing: -0.025em; font-variation-settings: 'opsz' 96; }
+  .pv-actions { display: flex; align-items: center; gap: 32px; margin: 36px 0 0; font-size: 16px; font-weight: 560; }
+  .pv-btn { display: inline-flex; align-items: center; min-height: 52px; padding: 0 28px; border-radius: 2px; background: var(--ink); color: var(--paper); }
+  .pv-lede { margin: 24px 0 0; font-size: 19px; line-height: 1.6; max-width: 620px; }
+  .pv-photo { position: relative; }
+  .pv-photo img { width: 100%; aspect-ratio: 440 / 540; object-fit: cover; border-radius: 4px; background: var(--placeholder); }
+  .pv-photo span { position: absolute; z-index: 1; width: 86px; height: 26px; background: rgba(238, 217, 138, 0.8); }
+  .pv-photo span:first-child { left: -22px; top: 6px; transform: rotate(-24deg); }
+  .pv-photo span:nth-child(2) { right: -26px; top: -6px; transform: rotate(-22deg); }
+
+  @media (max-width: 1100px) {
+    .pv-work { grid-template-columns: minmax(0, 1fr); }
+    .pv-h1, .pv-intro, .pv-filters, .pv-rail { grid-column: 1; }
+    .pv-intro { justify-self: start; margin-top: 28px; max-width: 560px; }
+    .pv-exp { grid-template-columns: minmax(0, 1fr) 340px; gap: 56px; }
+  }
+  @media (max-width: 720px) {
+    .pv-mark { font-size: 44px; }
+    .pv-nav { gap: 16px; font-size: 16px; }
+    .pv-nav svg { margin-left: -8px; }
+    .pv-work { padding-top: 24px; }
+    .pv-h1 { font-size: 40px; line-height: 1; }
+    .pv-intro { display: none; }
+    .pv-filters { gap: 18px; font-size: 17px; margin-top: 64px; }
+    .pv-meta { grid-template-columns: 1fr 1fr; }
+    .pv-hero { margin-inline: calc(-1 * var(--gutter)); width: calc(100% + 2 * var(--gutter)); aspect-ratio: 4 / 3; border-radius: 0; margin-top: 40px; }
+    .pv-exp { grid-template-columns: minmax(0, 1fr); gap: 48px; padding-top: 32px; }
+    .pv-photo { order: -1; max-width: 300px; margin-left: 12px; }
+    .ov-label { font-size: 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ov-label, .ov-close, .ov-card::after { transition: opacity 150ms ease; }
+  }
+</style>
