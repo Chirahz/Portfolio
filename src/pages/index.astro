@@ -1,9 +1,14 @@
 ---
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PenArrow from '../components/PenArrow.astro';
 import PenStroke from '../components/PenStroke.astro';
 import { projects, platformLabel, projectHref, type Platform } from '../data/projects';
+
+// The exact hero file each case page shows, so hovering a card can warm it up
+// and the image morph never lands on an empty frame.
+const heroSrc = Object.fromEntries(await Promise.all(projects.filter((p) => p.live).map(async (p) =>
+  [p.slug, (await getImage({ src: p.image, width: 1920, format: 'webp' })).src])));
 
 const filters: { key: 'all' | Platform; label: string; count: number }[] = [
   { key: 'all', label: 'all', count: projects.length },
@@ -53,7 +58,7 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
           const Tag = href ? 'a' : 'div';
           return (
             <li class="card" data-platform={p.platform}>
-              <Tag class="card-hit" href={href ?? undefined} aria-label={href ? undefined : `${p.title} — case study coming soon`}>
+              <Tag class="card-hit" href={href ?? undefined} data-hero={heroSrc[p.slug]} aria-label={href ? undefined : `${p.title} — case study coming soon`}>
                 <div class="card-top">
                   <div>
                     <h3>{p.title}</h3>
@@ -75,111 +80,130 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
 </Base>
 
 <script>
-  const rail = document.querySelector<HTMLUListElement>('[data-rail]')!;
-  const prev = document.querySelector<HTMLButtonElement>('[data-prev]')!;
-  const next = document.querySelector<HTMLButtonElement>('[data-next]')!;
-  const rangeEl = document.querySelector('[data-range]')!;
-  const totalEl = document.querySelector('[data-total]')!;
-  const cards = [...rail.querySelectorAll<HTMLLIElement>('.card')];
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  import { onPage } from '../scripts/page';
+  onPage((signal) => {
+    const rail = document.querySelector<HTMLUListElement>('[data-rail]');
+    if (!rail) return;
+    const prev = document.querySelector<HTMLButtonElement>('[data-prev]')!;
+    const next = document.querySelector<HTMLButtonElement>('[data-next]')!;
+    const rangeEl = document.querySelector('[data-range]')!;
+    const totalEl = document.querySelector('[data-total]')!;
+    const cards = [...rail.querySelectorAll<HTMLLIElement>('.card')];
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
-  const visibleCards = () => cards.filter((c) => !c.hidden);
-  const step = () => {
-    const v = visibleCards();
-    if (v.length < 2) return v[0]?.offsetWidth ?? 1;
-    return v[1].offsetLeft - v[0].offsetLeft;
-  };
-  const perView = () => {
-    const pad = parseFloat(getComputedStyle(rail).paddingLeft);
-    return Math.max(1, Math.floor((rail.clientWidth - pad + 8) / step()));
-  };
+    const visibleCards = () => cards.filter((c) => !c.hidden);
+    const step = () => {
+      const v = visibleCards();
+      if (v.length < 2) return v[0]?.offsetWidth ?? 1;
+      return v[1].offsetLeft - v[0].offsetLeft;
+    };
+    const perView = () => {
+      const pad = parseFloat(getComputedStyle(rail).paddingLeft);
+      return Math.max(1, Math.floor((rail.clientWidth - pad + 8) / step()));
+    };
 
-  function update() {
-    const total = visibleCards().length;
-    const s = step();
-    const first = Math.min(total - 1, Math.round(rail.scrollLeft / s));
-    const last = Math.min(total, first + perView());
-    rangeEl.textContent = total === 0 ? '0' : first + 1 === last ? `${last}` : `${first + 1}–${last}`;
-    totalEl.textContent = String(total);
-    const atStart = rail.scrollLeft <= 4;
-    const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4 || last >= total;
-    prev.setAttribute('aria-disabled', String(atStart));
-    next.setAttribute('aria-disabled', String(atEnd));
-  }
-
-  const go = (dir: 1 | -1) => {
-    rail.scrollBy({ left: dir * perView() * step(), behavior: reduce.matches ? 'auto' : 'smooth' });
-  };
-  prev.addEventListener('click', () => prev.getAttribute('aria-disabled') !== 'true' && go(-1));
-  next.addEventListener('click', () => next.getAttribute('aria-disabled') !== 'true' && go(1));
-
-  let raf = 0;
-  rail.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive: true });
-  addEventListener('resize', update);
-
-  // Filters
-  document.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.filter;
-      if (btn.getAttribute('aria-pressed') === 'true') return;
-      document.querySelectorAll('[data-filter]').forEach((b) => {
-        b.setAttribute('aria-pressed', String(b === btn));
-        b.classList.toggle('is-inked', b === btn);
-      });
-      rail.classList.add('is-filtering');
-      const apply = () => {
-        cards.forEach((c) => { c.hidden = key !== 'all' && c.dataset.platform !== key; });
-        rail.scrollLeft = 0;
-        update();
-        requestAnimationFrame(() => rail.classList.remove('is-filtering'));
-      };
-      reduce.matches ? apply() : setTimeout(apply, 90);
-    });
-  });
-
-  // Mouse drag to scroll (touch & trackpads scroll natively)
-  let dragging = false, moved = false, startX = 0, startLeft = 0;
-  rail.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'mouse' || e.button !== 0) return;
-    dragging = true; moved = false; startX = e.clientX; startLeft = rail.scrollLeft;
-  });
-  addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    if (!moved && Math.abs(dx) > 6) { moved = true; rail.classList.add('is-dragging'); }
-    if (moved) rail.scrollLeft = startLeft - dx;
-  });
-  addEventListener('pointerup', () => {
-    if (!dragging) return;
-    dragging = false;
-    if (moved) {
-      rail.classList.remove('is-dragging');
-      // settle on the nearest card
+    function update() {
+      const total = visibleCards().length;
       const s = step();
-      rail.scrollTo({ left: Math.round(rail.scrollLeft / s) * s, behavior: reduce.matches ? 'auto' : 'smooth' });
+      const first = Math.min(total - 1, Math.round(rail.scrollLeft / s));
+      const last = Math.min(total, first + perView());
+      rangeEl.textContent = total === 0 ? '0' : first + 1 === last ? `${last}` : `${first + 1}–${last}`;
+      totalEl.textContent = String(total);
+      const atStart = rail.scrollLeft <= 4;
+      const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4 || last >= total;
+      prev.setAttribute('aria-disabled', String(atStart));
+      next.setAttribute('aria-disabled', String(atEnd));
     }
+
+    const go = (dir: 1 | -1) => {
+      rail.scrollBy({ left: dir * perView() * step(), behavior: reduce.matches ? 'auto' : 'smooth' });
+    };
+    prev.addEventListener('click', () => prev.getAttribute('aria-disabled') !== 'true' && go(-1));
+    next.addEventListener('click', () => next.getAttribute('aria-disabled') !== 'true' && go(1));
+
+    let raf = 0;
+    rail.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive: true });
+    addEventListener('resize', update, { signal });
+
+    // Filters
+    document.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.filter;
+        if (btn.getAttribute('aria-pressed') === 'true') return;
+        document.querySelectorAll('[data-filter]').forEach((b) => {
+          b.setAttribute('aria-pressed', String(b === btn));
+          b.classList.toggle('is-inked', b === btn);
+        });
+        rail.classList.add('is-filtering');
+        const apply = () => {
+          cards.forEach((c) => { c.hidden = key !== 'all' && c.dataset.platform !== key; });
+          rail.scrollLeft = 0;
+          update();
+
+    // warm the case hero as soon as a card shows intent (hover, focus or touch)
+    const warmed = new Set<string>();
+    const warm = (e: Event) => {
+      const a = (e.target as HTMLElement).closest<HTMLElement>('[data-hero]');
+      const src = a?.dataset.hero;
+      if (!src || warmed.has(src)) return;
+      warmed.add(src);
+      const im = new Image(); im.decoding = 'async'; im.src = src;
+    };
+    rail.addEventListener('pointerover', warm);
+    rail.addEventListener('focusin', warm);
+    rail.addEventListener('touchstart', warm, { passive: true });
+          requestAnimationFrame(() => rail.classList.remove('is-filtering'));
+        };
+        reduce.matches ? apply() : setTimeout(apply, 90);
+      });
+    });
+
+    // Mouse drag to scroll (touch & trackpads scroll natively)
+    let dragging = false, moved = false, startX = 0, startLeft = 0;
+    rail.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      dragging = true; moved = false; startX = e.clientX; startLeft = rail.scrollLeft;
+    });
+    addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      if (!moved && Math.abs(dx) > 6) { moved = true; rail.classList.add('is-dragging'); }
+      if (moved) rail.scrollLeft = startLeft - dx;
+    }, { signal });
+    addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
+      if (moved) {
+        rail.classList.remove('is-dragging');
+        // settle on the nearest card
+        const s = step();
+        rail.scrollTo({ left: Math.round(rail.scrollLeft / s) * s, behavior: reduce.matches ? 'auto' : 'smooth' });
+      }
+    }, { signal });
+    rail.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+    rail.addEventListener('dragstart', (e) => e.preventDefault());
+
+    // Arrow keys move between cards
+    rail.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const items = visibleCards().map((c) => c.querySelector<HTMLElement>('a.card-hit')).filter(Boolean) as HTMLElement[];
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      if (i < 0) return;
+      const n = items[i + (e.key === 'ArrowRight' ? 1 : -1)];
+      if (n) { e.preventDefault(); n.focus(); }
+    });
+
+    update();
+
+    // Pen loop: only runs while the headline is on screen and the tab is visible
+    const head = document.querySelector<HTMLElement>('.head')!;
+    let onScreen = true;
+    const sync = () => head.classList.toggle('is-paused', !onScreen || document.hidden);
+    const io = new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; sync(); });
+    io.observe(head);
+    signal.addEventListener('abort', () => io.disconnect());
+    document.addEventListener('visibilitychange', sync, { signal });
   });
-  rail.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
-  rail.addEventListener('dragstart', (e) => e.preventDefault());
-
-  // Arrow keys move between cards
-  rail.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const items = visibleCards().map((c) => c.querySelector<HTMLElement>('a.card-hit')).filter(Boolean) as HTMLElement[];
-    const i = items.indexOf(document.activeElement as HTMLElement);
-    if (i < 0) return;
-    const n = items[i + (e.key === 'ArrowRight' ? 1 : -1)];
-    if (n) { e.preventDefault(); n.focus(); }
-  });
-
-  update();
-
-  // Pen loop: only runs while the headline is on screen and the tab is visible
-  const head = document.querySelector<HTMLElement>('.head')!;
-  let onScreen = true;
-  const sync = () => head.classList.toggle('is-paused', !onScreen || document.hidden);
-  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; sync(); }).observe(head);
-  document.addEventListener('visibilitychange', sync);
 </script>
 
 <style>
@@ -284,6 +308,8 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     font-size: 20px; line-height: 29px; color: var(--ink);
   }
   .intro span { display: block; }
+  /* narrower desktops: let the three lines re-wrap naturally inside the column */
+  @media (max-width: 1380px) { .intro { width: auto; } .intro span { display: inline; } }
 
   /* ---------- Toolbar ---------- */
   .toolbar {

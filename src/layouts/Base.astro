@@ -3,7 +3,21 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import ContactSheet from '../components/ContactSheet.astro';
+import { ClientRouter } from 'astro:transitions';
 import { site } from '../data/site';
+
+// Page change: the old page lifts away fast, the new one rises in a beat later,
+// so the shared project image (see .work-image) gets the stage while it morphs.
+const pageAnim = {
+  forwards: {
+    old: { name: 'page-out', duration: '0.38s', easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fillMode: 'both' },
+    new: { name: 'page-in', duration: '0.8s', delay: '0.32s', easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fillMode: 'both' },
+  },
+  backwards: {
+    old: { name: 'page-out', duration: '0.38s', easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fillMode: 'both' },
+    new: { name: 'page-in', duration: '0.8s', delay: '0.32s', easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fillMode: 'both' },
+  },
+};
 
 interface Props { title?: string; description?: string; footer?: boolean; image?: string }
 const { title, description = site.description, footer = true, image } = Astro.props;
@@ -11,13 +25,25 @@ const fullTitle = title ? `${title} — CJ` : site.title;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 <!doctype html>
-<html lang="en">
+<html lang="en" transition:animate={pageAnim}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script is:inline>
-    try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+    (function () {
+      function apply(doc) {
+        doc.documentElement.classList.add('js');
+        try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') doc.documentElement.dataset.theme = t; } catch (e) {}
+      }
+      apply(document);
+      if (!window.__themeHook) {
+        window.__themeHook = true;
+        // keep the visitor's theme on the incoming page before it is shown
+        document.addEventListener('astro:before-swap', function (e) { apply(e.newDocument); });
+      }
+    })();
   </script>
+  <ClientRouter />
   <title>{fullTitle}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
@@ -36,5 +62,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   <main id="main"><slot /></main>
   {footer && <Footer />}
   <ContactSheet />
+  <script>import '../scripts/smooth'; import '../scripts/transitions';</script>
 </body>
 </html>

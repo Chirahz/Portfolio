@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import PenArrow from '../../components/PenArrow.astro';
@@ -15,15 +15,25 @@ const d = entry.data;
 const next = projects.find((p) => p.slug === d.next);
 const nextHref = next?.live ? `/work/${next.slug}` : null;
 const img = d.hero;
+// Placeholder gallery until the case has its own images: the hero plus the other project photos.
+// TODO: replace with KCB × PayPal screens, research photos and artefacts.
+const gallery = [img, ...projects.filter((p) => p.slug !== entry.id).map((p) => p.image)];
+const rowA = [...gallery, ...gallery];
+const rowB = [...gallery.slice(3), ...gallery, ...gallery.slice(0, 3)];
+const words = d.title.split(' ');
+// one fixed file (same call as the landing card's preload) so the morph target is already cached
+const heroImg = await getImage({ src: img, width: 1920, format: 'webp' });
 ---
 <Base title={d.title} description={d.statement.replace(/[[\]]/g, '')}>
   <article class="case wrap">
     <a class="back link" href="/#work"><PenArrow direction="w" /> All projects</a>
 
     <header class="intro">
-      <h1>{d.title}</h1>
-      <p class="statement">{d.statement}</p>
-      <dl class="meta">
+      <h1 aria-label={d.title}>
+        {words.map((w, i) => <span class="w" aria-hidden="true"><span style={`--i:${i}`}>{w}</span></span>)}
+      </h1>
+      <p class="statement" data-reveal>{d.statement}</p>
+      <dl class="meta" data-reveal>
         <div><dt>Client</dt><dd>{d.client}</dd></div>
         <div><dt>My role</dt><dd>{d.role}</dd></div>
         <div><dt>Year</dt><dd>{d.year}</dd></div>
@@ -31,11 +41,24 @@ const img = d.hero;
       </dl>
     </header>
 
-    <figure class="hero">
-      <Image src={img} alt={d.heroAlt} widths={[640, 1280, 1920]} sizes="(max-width: 720px) 100vw, 1248px" loading="eager" fetchpriority="high" />
+    <figure class="hero" data-work-hero>
+      <img src={heroImg.src} width={heroImg.attributes.width} height={heroImg.attributes.height} alt={d.heroAlt} loading="eager" fetchpriority="high" decoding="sync" data-parallax />
     </figure>
 
-    <section class="sec" aria-labelledby="s-brief">
+    <section class="glimpse" aria-labelledby="s-glimpse" data-hscroll>
+      <p class="label hand" id="s-glimpse">a closer look</p>
+      <p class="glimpse-note">[Placeholder images — swap in screens, research photos and artefacts from this project]</p>
+      <div class="rows">
+        <ul class="row" data-row="1">
+          {rowA.map((im) => <li><Image src={im} alt="" widths={[360, 720]} sizes="360px" /></li>)}
+        </ul>
+        <ul class="row" data-row="-1">
+          {rowB.map((im) => <li><Image src={im} alt="" widths={[360, 720]} sizes="360px" /></li>)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="sec" data-reveal aria-labelledby="s-brief">
       <p class="label hand" aria-hidden="true">the brief</p>
       <div class="body">
         <h2 id="s-brief">{d.brief.heading}</h2>
@@ -43,7 +66,7 @@ const img = d.hero;
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="s-listen">
+    <section class="sec" data-reveal aria-labelledby="s-listen">
       <p class="label hand" aria-hidden="true">listen</p>
       <div class="body">
         <h2 id="s-listen">{d.listen.heading}</h2>
@@ -55,7 +78,7 @@ const img = d.hero;
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="s-map">
+    <section class="sec" data-reveal aria-labelledby="s-map">
       <p class="label hand" aria-hidden="true">map</p>
       <div class="body">
         <h2 id="s-map">{d.map.heading}</h2>
@@ -67,7 +90,7 @@ const img = d.hero;
       </figure>
     </section>
 
-    <section class="sec" aria-labelledby="s-sketch">
+    <section class="sec" data-reveal aria-labelledby="s-sketch">
       <p class="label hand" aria-hidden="true">sketch</p>
       <div class="body">
         <h2 id="s-sketch">{d.sketch.heading}</h2>
@@ -83,7 +106,7 @@ const img = d.hero;
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="s-test">
+    <section class="sec" data-reveal aria-labelledby="s-test">
       <p class="label hand" aria-hidden="true">test</p>
       <div class="body">
         <h2 id="s-test">{d.test.heading}</h2>
@@ -105,7 +128,7 @@ const img = d.hero;
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="s-ship">
+    <section class="sec" data-reveal aria-labelledby="s-ship">
       <p class="label hand" aria-hidden="true">ship</p>
       <div class="body">
         <h2 id="s-ship">{d.ship.heading}</h2>
@@ -121,7 +144,7 @@ const img = d.hero;
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="s-impact">
+    <section class="sec" data-reveal aria-labelledby="s-impact">
       <p class="label hand" aria-hidden="true">impact</p>
       <div class="body">
         <h2 id="s-impact">{d.impact.heading}</h2>
@@ -134,7 +157,7 @@ const img = d.hero;
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="s-back">
+    <section class="sec" data-reveal aria-labelledby="s-back">
       <p class="label hand" aria-hidden="true">looking back</p>
       <div class="body">
         <h2 id="s-back">{d.lookingBack.heading}</h2>
@@ -143,7 +166,7 @@ const img = d.hero;
     </section>
 
     {next && (
-      <aside class="next" aria-label="Next project">
+      <aside class="next" aria-label="Next project" data-reveal>
         {(() => {
           const Tag = nextHref ? 'a' : 'div';
           return (
@@ -163,6 +186,58 @@ const img = d.hero;
   </article>
 </Base>
 
+<script>
+  import { onPage, reducedMotion } from '../../scripts/page';
+  onPage((signal) => {
+    const article = document.querySelector('.case');
+    if (!article) return;
+
+    // sections ease up as they enter
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+    article.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+    signal.addEventListener('abort', () => io.disconnect());
+    if (reducedMotion()) return;
+
+    // one frame loop drives the hero parallax and the sideways gallery
+    const hero = article.querySelector<HTMLImageElement>('[data-parallax]');
+    const strip = article.querySelector<HTMLElement>('[data-hscroll]');
+    const rows = [...article.querySelectorAll<HTMLElement>('[data-row]')];
+    let id = 0, lastY = -1;
+    const frame = () => {
+      const y = window.scrollY;
+      if (y !== lastY) {
+        lastY = y;
+        const vh = innerHeight;
+        if (hero) {
+          const r = hero.parentElement!.getBoundingClientRect();
+          if (r.bottom > 0 && r.top < vh) {
+            const shift = (vh - r.top) / (vh + r.height); // 0 → 1 while on screen
+            hero.style.transform = `translate3d(0, ${(shift - 0.35) * 14}%, 0) scale(1.14)`;
+          }
+        }
+        if (strip) {
+          const r = strip.getBoundingClientRect();
+          if (r.bottom > 0 && r.top < vh) {
+            const p = Math.min(1, Math.max(0, (vh - r.top) / (vh + r.height)));
+            rows.forEach((row) => {
+              // a gentle drift: about half a screen of sideways travel over the whole pass
+              const travel = Math.min(Math.max(0, row.scrollWidth - row.parentElement!.clientWidth), innerWidth * 0.55);
+              const dir = Number(row.dataset.row);
+              const x = dir > 0 ? -p * travel : -(1 - p) * travel;
+              row.style.transform = `translate3d(${x}px, 0, 0)`;
+            });
+          }
+        }
+      }
+      id = requestAnimationFrame(frame);
+    };
+    id = requestAnimationFrame(frame);
+    signal.addEventListener('abort', () => cancelAnimationFrame(id));
+  });
+</script>
+
 <style>
   .case { padding-top: 40px; padding-bottom: 128px; }
   .back { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; color: var(--pencil); min-height: 44px; }
@@ -179,7 +254,24 @@ const img = d.hero;
   .meta dd { margin: 4px 0 0; font-size: 17px; line-height: 1.45; }
 
   .hero { margin: 64px 0 0; aspect-ratio: 1248 / 702; overflow: hidden; background: var(--placeholder); border-radius: 4px; }
-  .hero :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+  .hero :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; transform: translate3d(0, -4.9%, 0) scale(1.14); will-change: transform; }
+
+  /* title: each word rises out of its own line box */
+  h1 .w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+  h1 .w + .w { margin-left: 0.24em; }
+  h1 .w > span { display: inline-block; transform: translateY(108%); animation: word-rise 1s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.42s + var(--i) * 0.08s); }
+  @keyframes word-rise { to { transform: none; } }
+
+  /* sideways gallery driven by vertical scroll */
+  .glimpse { margin-top: 128px; }
+  .glimpse .label { margin-bottom: 8px; }
+  .glimpse-note { margin: 0 0 32px; font-size: 15px; color: var(--pencil); }
+  .rows { margin-inline: calc(-1 * var(--gutter)); overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .row { list-style: none; margin: 0; padding: 0 var(--gutter); display: flex; gap: 16px; width: max-content; will-change: transform; }
+  .row li { flex: 0 0 auto; width: clamp(220px, 25vw, 360px); aspect-ratio: 4 / 5; overflow: hidden; border-radius: 4px; background: var(--placeholder); }
+  .row li :global(img) { width: 100%; height: 100%; object-fit: cover; }
+  .row[data-row="-1"] li:nth-child(odd) { aspect-ratio: 5 / 4; width: clamp(275px, 31vw, 450px); }
+  .row[data-row="1"] li:nth-child(3n) { aspect-ratio: 5 / 4; width: clamp(275px, 31vw, 450px); }
 
   .sec {
     display: grid; grid-template-columns: 296px minmax(0, 840px); column-gap: 112px;
@@ -247,6 +339,12 @@ const img = d.hero;
   }
   .next-card:focus-visible { outline: none; }
   .next-card:focus-visible::before { opacity: 1; transform: none; box-shadow: var(--shadow-lift), 0 0 0 2px var(--pen); }
+
+  @media (prefers-reduced-motion: reduce) {
+    h1 .w > span { animation: none; transform: none; }
+    .hero :global(img) { transform: none; }
+    .rows { overflow-x: auto; }
+  }
 
   @media (max-width: 1100px) {
     .sec { grid-template-columns: 200px minmax(0, 1fr); column-gap: 48px; }
