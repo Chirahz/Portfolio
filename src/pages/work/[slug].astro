@@ -192,18 +192,27 @@ const heroImg = await getImage({ src: img, width: 1920, format: 'webp' });
     const article = document.querySelector('.case');
     if (!article) return;
 
-    // sections ease up as they enter
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
-    article.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
-    signal.addEventListener('abort', () => io.disconnect());
+    // sections ease up as they come into view; anything already above the fold (End key,
+    // fast flicks, anchor jumps) is revealed too, so nothing is ever left hidden
+    let pending = [...article.querySelectorAll<HTMLElement>('[data-reveal]')];
+    const reveal = () => {
+      if (!pending.length) return;
+      const edge = innerHeight * 0.92;
+      pending = pending.filter((el) => {
+        if (el.getBoundingClientRect().top < edge) { el.classList.add('is-in'); return false; }
+        return true;
+      });
+    };
+    reveal();
+    addEventListener('scroll', reveal, { passive: true, signal });
+    addEventListener('resize', reveal, { signal });
     if (reducedMotion()) return;
 
     // one frame loop drives the hero parallax and the sideways gallery
     const hero = article.querySelector<HTMLImageElement>('[data-parallax]');
     const strip = article.querySelector<HTMLElement>('[data-hscroll]');
     const rows = [...article.querySelectorAll<HTMLElement>('[data-row]')];
+    const top0 = hero ? hero.parentElement!.getBoundingClientRect().top : 0;
     let id = 0, lastY = -1;
     const frame = () => {
       const y = window.scrollY;
@@ -213,8 +222,11 @@ const heroImg = await getImage({ src: img, width: 1920, format: 'webp' });
         if (hero) {
           const r = hero.parentElement!.getBoundingClientRect();
           if (r.bottom > 0 && r.top < vh) {
-            const shift = (vh - r.top) / (vh + r.height); // 0 → 1 while on screen
-            hero.style.transform = `translate3d(0, ${(shift - 0.35) * 14}%, 0) scale(1.14)`;
+            // starts at exactly the CSS resting value (0) so nothing jumps after the morph lands;
+            // the photo drifts down at 8% of scroll speed, capped by the headroom the 1.14 scale gives
+            const scrolled = Math.max(0, top0 - r.top);
+            const y = Math.min(scrolled * 0.08, r.height * 0.13);
+            hero.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0) scale(1.14)`;
           }
         }
         if (strip) {
@@ -254,7 +266,7 @@ const heroImg = await getImage({ src: img, width: 1920, format: 'webp' });
   .meta dd { margin: 4px 0 0; font-size: 17px; line-height: 1.45; }
 
   .hero { margin: 64px 0 0; aspect-ratio: 1248 / 702; overflow: hidden; background: var(--placeholder); border-radius: 4px; }
-  .hero :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; transform: translate3d(0, -4.9%, 0) scale(1.14); will-change: transform; }
+  .hero :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; transform: translate3d(0, 0, 0) scale(1.14); transform-origin: 50% 0; will-change: transform; }
 
   /* title: each word rises out of its own line box */
   h1 .w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.08em; margin-bottom: -0.08em; }

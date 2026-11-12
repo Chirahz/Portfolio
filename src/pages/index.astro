@@ -212,23 +212,24 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
       const s = parseFloat(getComputedStyle(html).getPropertyValue('--ov-s')) || 0.28;
       const gap = innerWidth * 0.032;
       const off = innerWidth * s + gap;              // card centre-to-centre while zoomed out
-      const glide = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      const move = 'cubic-bezier(0.77, 0, 0.175, 1)';   // camera move: soft start, soft landing
       const focal = 'cubic-bezier(0.16, 1, 0.3, 1)';
-      const zoomAt = 1450, zoomFor = 1150;
+      const zoomAt = 1300, zoomFor = 1250;
       const anims: Animation[] = [];
       const rise = (el: HTMLElement, base: string, delay: number) => anims.push(el.animate(
-        [{ transform: `translateY(9vh) ${base}`, opacity: 0 }, { transform: base, opacity: 1 }],
+        [{ transform: `translate3d(0, 6vh, 0) ${base}`, opacity: 0 }, { transform: `translate3d(0, 0, 0) ${base}`, opacity: 1 }],
         { duration: 800, delay, easing: focal, fill: 'both' }));
       // 1. the three pages land on the desk
       rise(left, `translateX(${-off}px) scale(${s})`, 0);
-      rise(shell, `scale(${s})`, 90);
-      rise(right, `translateX(${off}px) scale(${s})`, 180);
+      rise(shell, `scale(${s})`, 70);
+      rise(right, `translateX(${off}px) scale(${s})`, 140);
       // 2. the camera moves in on the middle page; its neighbours slide out of frame with it
-      const zoom = { duration: zoomFor, delay: zoomAt, easing: glide, fill: 'forwards' as FillMode, composite: 'replace' as CompositeOperation };
+      const zoom = { duration: zoomFor, delay: zoomAt, easing: move, fill: 'forwards' as FillMode, composite: 'replace' as CompositeOperation };
       const big = innerWidth + gap / s;
-      const zl = left.animate([{ transform: `translateX(${-off}px) scale(${s})` }, { transform: `translateX(${-big}px) scale(1)` }], zoom);
-      const zc = shell.animate([{ transform: `scale(${s})`, boxShadow: '0 40px 80px rgba(20,16,8,.18)' }, { transform: 'scale(1)', boxShadow: '0 0 0 rgba(0,0,0,0)' }], zoom);
-      const zr = right.animate([{ transform: `translateX(${off}px) scale(${s})` }, { transform: `translateX(${big}px) scale(1)` }], zoom);
+      const zl = left.animate([{ transform: `translate3d(${-off}px, 0, 0) scale(${s})` }, { transform: `translate3d(${-big}px, 0, 0) scale(1)` }], zoom);
+      // transform only: animating the shadow would repaint a full-page layer every frame
+      const zc = shell.animate([{ transform: `translate3d(0, 0, 0) scale(${s})` }, { transform: 'translate3d(0, 0, 0) scale(1)' }], zoom);
+      const zr = right.animate([{ transform: `translate3d(${off}px, 0, 0) scale(${s})` }, { transform: `translate3d(${big}px, 0, 0) scale(1)` }], zoom);
       anims.push(zl, zc, zr);
 
       let done = false;
@@ -283,7 +284,7 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     position: fixed; inset: 0; overflow: hidden; z-index: 1;
     background-color: var(--paper); background-image: var(--paper-image); background-position: 0 0, 0 var(--header-h);
     box-shadow: 0 2px 6px rgba(20, 16, 8, 0.12), 0 40px 80px rgba(20, 16, 8, 0.18);
-    transform-origin: 50% 50%; opacity: 0;
+    transform-origin: 50% 50%; opacity: 0; will-change: transform, opacity; backface-visibility: hidden;
     padding: 0 var(--gutter);
   }
   .ov-head {

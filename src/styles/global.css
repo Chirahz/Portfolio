@@ -29,6 +29,7 @@
   --ease-ui: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-focal: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);   /* between two on-screen positions: soft start, soft landing */
 
   color-scheme: light dark;
 }
@@ -145,22 +146,24 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- Page transitions ---------- */
-@keyframes page-out { to { opacity: 0; transform: translateY(-14px); } }
-@keyframes page-in  { from { opacity: 0; transform: translateY(36px); } }
+@keyframes page-out { to { opacity: 0; transform: translate3d(0, -10px, 0); } }
+@keyframes page-in  { from { opacity: 0; transform: translate3d(0, 24px, 0); } }
 
 /* the clicked project image grows into the case hero (and back) */
 ::view-transition-group(*.work-image) {
-  animation-duration: 0.95s;
-  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  /* a move between two on-screen places: ease in-out, so it neither lurches off nor slams in */
+  animation-duration: 0.9s;
+  animation-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
 }
+::view-transition-image-pair(*.work-image) { isolation: auto; }
 ::view-transition-old(*.work-image),
 ::view-transition-new(*.work-image) {
   width: 100%; height: 100%; object-fit: cover; overflow: clip;
-  mix-blend-mode: normal;
+  mix-blend-mode: normal; backface-visibility: hidden;
 }
-/* the card photo stays solid the whole way; the hero crop settles in on top near the end */
+/* the card photo stays solid the whole way; the hero crop dissolves in over the last third */
 ::view-transition-old(*.work-image) { animation: none; opacity: 1; }
-::view-transition-new(*.work-image) { animation: vt-img-in 0.35s cubic-bezier(0.23, 1, 0.32, 1) 0.6s both; }
+::view-transition-new(*.work-image) { animation: vt-img-in 0.36s cubic-bezier(0.23, 1, 0.32, 1) 0.52s both; }
 @keyframes vt-img-in { from { opacity: 0; } }
 /* the header never moves */
 ::view-transition-group(site-header) { animation: none; }
