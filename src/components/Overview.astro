@@ -8,7 +8,7 @@ import { getImage } from 'astro:assets';
 import { getEntry } from 'astro:content';
 import { projects, platformLabel } from '../data/projects';
 import { site } from '../data/site';
-import portraitSrc from '../assets/work/p1.jpg';
+import { photo as expPhoto } from '../data/experience';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const current = path === '/' ? 'work' : path.startsWith('/work/') ? 'cases' : path === '/experience' ? 'experience' : '';
@@ -20,7 +20,7 @@ const d = kase.data;
 const img = (src: ImageMetadata, width: number) => getImage({ src, width, format: 'webp' }).then((r) => r.src);
 const workImgs = await Promise.all(projects.slice(0, 4).map((p) => img(p.image, 800)));
 const caseHero = await img(d.hero, 1920);
-const portrait = await img(portraitSrc, 880);
+const portrait = expPhoto ? await img(expPhoto, 880) : '';
 
 const slots = [
   { key: 'cases', k: -1, href: `/work/${kase.id}`, label: 'cases', name: `Case study: ${d.title}` },
@@ -80,7 +80,7 @@ const headerNav = ['Work', 'Experience', 'Contact'];
               <p class="pv-lede">Senior UX designer and researcher with 8+&nbsp;years advancing financial inclusion through digital financial products, from mobile money to banking apps and the platforms behind them.</p>
               <p class="pv-actions"><span class="pv-btn">{site.cv ? 'Download CV' : 'Ask for my CV'} ↗</span><span>LinkedIn ↗</span></p>
             </div>
-            <div class="pv-photo"><span></span><span></span><img src={portrait} alt="" loading="lazy" decoding="async" /></div>
+            <div class="pv-photo"><span></span><span></span>{portrait ? <img src={portrait} alt="" loading="lazy" decoding="async" /> : <div class="pv-photo-ph">[Your photo]</div>}</div>
           </div>
         )}
       </div>
@@ -377,6 +377,7 @@ const headerNav = ['Work', 'Experience', 'Contact'];
   .pv-photo { position: relative; }
   .pv-photo img { width: 100%; aspect-ratio: 440 / 540; object-fit: cover; border-radius: 4px; background: var(--placeholder); }
   .pv-photo span { position: absolute; z-index: 1; width: 86px; height: 26px; background: rgba(238, 217, 138, 0.8); }
+  .pv-photo-ph { aspect-ratio: 440 / 540; border-radius: 4px; background: var(--placeholder); display: grid; place-items: center; color: var(--pencil); font-size: 22px; }
   .pv-photo span:first-child { left: -22px; top: 6px; transform: rotate(-24deg); }
   .pv-photo span:nth-child(2) { right: -26px; top: -6px; transform: rotate(-22deg); }
 
@@ -397,7 +398,7 @@ const headerNav = ['Work', 'Experience', 'Contact'];
     .pv-meta { grid-template-columns: 1fr 1fr; }
     .pv-hero { margin-inline: calc(-1 * var(--gutter)); width: calc(100% + 2 * var(--gutter)); aspect-ratio: 4 / 3; border-radius: 0; margin-top: 40px; }
     .pv-exp { grid-template-columns: minmax(0, 1fr); gap: 48px; padding-top: 32px; }
-    .pv-photo { order: -1; max-width: 300px; margin-left: 12px; }
+    .pv-photo { max-width: 260px; margin-left: 12px; }
     .ov-label { font-size: 22px; }
   }
   @media (prefers-reduced-motion: reduce) {
