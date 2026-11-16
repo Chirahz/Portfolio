@@ -37,6 +37,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') doc.documentElement.dataset.theme = t; } catch (e) {}
       }
       apply(document);
+      // full page load of the home page: the work photos wipe in once (not on in-site navigation)
+      var fromOverview = false;
+      try { fromOverview = sessionStorage.getItem('ov-nav') === '1'; sessionStorage.removeItem('ov-nav'); } catch (e) {}
+      if (location.pathname === '/' && !fromOverview) document.documentElement.classList.add('wipe');
       // first visit to the home page: start in the zoomed-out overview (skipped for reduced motion)
       try {
         if (location.pathname === '/' && !sessionStorage.getItem('intro-seen') &&

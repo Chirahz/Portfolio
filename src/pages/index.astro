@@ -2,23 +2,19 @@
 import { Image, getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PenArrow from '../components/PenArrow.astro';
-import PenStroke from '../components/PenStroke.astro';
-import { projects, platformLabel, projectHref, type Platform } from '../data/projects';
+import { projects, platformLabel, projectHref } from '../data/projects';
 
 // The exact hero file each case page shows, so hovering a card can warm it up
 // and the image morph never lands on an empty frame.
 const heroSrc = Object.fromEntries(await Promise.all(projects.filter((p) => p.live).map(async (p) =>
   [p.slug, (await getImage({ src: p.image, width: 1920, format: 'webp' })).src])));
 
-const filters: { key: 'all' | Platform; label: string; count: number }[] = [
-  { key: 'all', label: 'all', count: projects.length },
-  ...(['mobile', 'web', 'research'] as Platform[]).map((k) => ({
-    key: k, label: k, count: projects.filter((p) => p.platform === k).length,
-  })),
-];
+// Finished case studies lead (the first one is featured); the rest follow as "in progress".
+const ordered = [...projects.filter((p) => p.live), ...projects.filter((p) => !p.live)];
+const liveCount = projects.filter((p) => p.live).length;
+const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
 ---
 <Base footer={false}>
-  </div>
   <div class="landing wrap">
     <section class="head" aria-labelledby="hl">
       <h1 id="hl">
@@ -37,38 +33,38 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     <p class="intro"><span>Senior UX designer and researcher with</span> <span>8+&nbsp;years advancing financial inclusion</span> <span>through digital financial products.</span></p>
 
     <section class="work" id="work" aria-labelledby="work-title">
-      <h2 id="work-title" class="visually-hidden">Selected work</h2>
       <div class="toolbar">
-        <div class="filters" role="group" aria-label="Filter projects">
-          {filters.map((f, i) => (
-            <button type="button" class:list={['filter', { 'is-inked': i === 0 }]} data-filter={f.key} aria-pressed={i === 0 ? 'true' : 'false'}>
-              {f.label} <span class="count">{f.count}</span><PenStroke />
-            </button>
-          ))}
-        </div>
+        <p class="work-label"><span class="hand" id="work-title">selected work</span>
+          <span class="work-count">{liveCount} case {liveCount === 1 ? 'study' : 'studies'} · {projects.length - liveCount} in progress</span></p>
         <div class="controls">
-          <p class="counter" aria-live="polite"><span data-range>1–3</span> of <span data-total>{projects.length}</span></p>
+          <p class="counter" aria-live="polite">
+            <span><span data-range>1–2</span> of {projects.length}</span>
+            <svg class="progress" viewBox="0 0 72 6" preserveAspectRatio="none" aria-hidden="true"><path class="track" d="M1 3.4C20 2.4 46 2.2 71 3" /><path class="fill" data-progress pathLength="1" d="M1 3.4C20 2.4 46 2.2 71 3" /></svg>
+          </p>
           <button type="button" class="arrow" data-prev aria-label="Previous projects" aria-disabled="true"><PenArrow direction="w" size={16} /></button>
           <button type="button" class="arrow" data-next aria-label="Next projects"><PenArrow direction="e" size={16} /></button>
         </div>
       </div>
 
       <ul class="rail" data-rail>
-        {projects.map((p, i) => {
+        {ordered.map((p, i) => {
           const href = projectHref(p);
           const Tag = href ? 'a' : 'div';
+          const featured = i === 0 && p.live;
           return (
-            <li class="card" data-platform={p.platform}>
-              <Tag class="card-hit" href={href ?? undefined} data-hero={heroSrc[p.slug]} aria-label={href ? undefined : `${p.title} — case study coming soon`}>
+            <li class:list={['card', { 'card--featured': featured, 'card--wip': !href }]} style={`--i:${i}`}>
+              <Tag class="card-hit" href={href ?? undefined} data-hero={heroSrc[p.slug]} data-cursor={href ? 'View case' : undefined}>
                 <div class="card-top">
-                  <div>
-                    <h3>{p.title}</h3>
-                    <p class="tags">{platformLabel[p.platform]} · {p.field}</p>
+                  <div class="card-text">
+                    <h3>{p.title}{!href && <span class="visually-hidden"> (case study in progress)</span>}</h3>
+                    <p class="line">{p.line}</p>
+                    <p class="meta">{!href && <><span class="wip hand" aria-hidden="true">in progress</span> · </>}{platformLabel[p.platform]} · {p.field} · <span class={ph(p.role)}>{p.role}</span> · <span class={ph(p.year)}>{p.year}</span></p>
                   </div>
-                  <span class="cta">{href ? <>Read the case <PenArrow /></> : 'Write-up soon'}</span>
+                  {href && <span class="cta">Read the case <PenArrow /></span>}
                 </div>
                 <div class="frame">
-                  <Image src={p.image} alt={p.alt} widths={[400, 800]} sizes="(max-width: 720px) 78vw, 395px"
+                  <Image src={p.image} alt={p.alt} widths={featured ? [820, 1640] : [400, 800]}
+                    sizes={featured ? '(max-width: 720px) 86vw, 820px' : '(max-width: 720px) 78vw, 395px'}
                     loading={i < 4 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} />
                 </div>
               </Tag>
@@ -76,97 +72,109 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
           );
         })}
       </ul>
+
+      <div class="closing">
+        <p class="proof">Now at <strong>KCB Bank Group</strong> · before that M-Pesa Africa and Twiga Foods</p>
+        <p class="closing-links">
+          <a class="link" href="/experience">Experience</a>
+          <button type="button" class="link" data-open-contact>Write to me</button>
+        </p>
+      </div>
     </section>
   </div>
+  <div class="cursor" data-cursor-pill aria-hidden="true"><span data-cursor-text>View case</span><PenArrow /></div>
 </Base>
 
 <script>
-  import { onPage } from '../scripts/page';
+  import { onPage, reducedMotion } from '../scripts/page';
   onPage((signal) => {
     const rail = document.querySelector<HTMLUListElement>('[data-rail]');
     if (!rail) return;
     const prev = document.querySelector<HTMLButtonElement>('[data-prev]')!;
     const next = document.querySelector<HTMLButtonElement>('[data-next]')!;
     const rangeEl = document.querySelector('[data-range]')!;
-    const totalEl = document.querySelector('[data-total]')!;
+    const progress = document.querySelector<SVGPathElement>('[data-progress]');
     const cards = [...rail.querySelectorAll<HTMLLIElement>('.card')];
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth');
 
-    const visibleCards = () => cards.filter((c) => !c.hidden);
-    const step = () => {
-      const v = visibleCards();
-      if (v.length < 2) return v[0]?.offsetWidth ?? 1;
-      return v[1].offsetLeft - v[0].offsetLeft;
+    // ---- positions: where each card starts, in rail scroll coordinates ----
+    const pad = () => parseFloat(getComputedStyle(rail).paddingLeft);
+    const maxScroll = () => rail.scrollWidth - rail.clientWidth;
+    const starts = () => {
+      const r0 = rail.getBoundingClientRect().left - rail.scrollLeft + pad();
+      return cards.map((c) => Math.min(maxScroll(), Math.max(0, c.getBoundingClientRect().left - r0)));
     };
-    const perView = () => {
-      const pad = parseFloat(getComputedStyle(rail).paddingLeft);
-      return Math.max(1, Math.floor((rail.clientWidth - pad + 8) / step()));
+    const visibleRange = () => {
+      const r = rail.getBoundingClientRect();
+      const left = r.left + pad() - 2, right = r.right - pad() + 2;
+      const vis = cards.map((c) => { const b = c.getBoundingClientRect(); return b.left >= left && b.right <= right; });
+      let first = vis.indexOf(true), last = vis.lastIndexOf(true);
+      if (first < 0) { first = last = 0; }
+      return { first, last };
     };
 
     function update() {
-      const total = visibleCards().length;
-      const s = step();
-      const first = Math.min(total - 1, Math.round(rail.scrollLeft / s));
-      const last = Math.min(total, first + perView());
-      rangeEl.textContent = total === 0 ? '0' : first + 1 === last ? `${last}` : `${first + 1}–${last}`;
-      totalEl.textContent = String(total);
-      const atStart = rail.scrollLeft <= 4;
-      const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4 || last >= total;
-      prev.setAttribute('aria-disabled', String(atStart));
-      next.setAttribute('aria-disabled', String(atEnd));
+      const { first, last } = visibleRange();
+      rangeEl.textContent = first === last ? `${first + 1}` : `${first + 1}–${last + 1}`;
+      const max = maxScroll();
+      const p = max > 0 ? rail.scrollLeft / max : 1;
+      if (progress) progress.style.strokeDashoffset = String(1.02 - Math.max(0.06, p) * 1.02);
+      prev.setAttribute('aria-disabled', String(rail.scrollLeft <= 4));
+      next.setAttribute('aria-disabled', String(rail.scrollLeft >= max - 4));
     }
 
-    const go = (dir: 1 | -1) => {
-      rail.scrollBy({ left: dir * perView() * step(), behavior: reduce.matches ? 'auto' : 'smooth' });
-    };
-    prev.addEventListener('click', () => prev.getAttribute('aria-disabled') !== 'true' && go(-1));
-    next.addEventListener('click', () => next.getAttribute('aria-disabled') !== 'true' && go(1));
+    // next: bring the first card that isn't fully visible to the start; prev: step back a page
+    next.addEventListener('click', () => {
+      if (next.getAttribute('aria-disabled') === 'true') return;
+      const { last } = visibleRange();
+      const s = starts();
+      rail.scrollTo({ left: s[Math.min(cards.length - 1, last + 1)], behavior: behavior() });
+    });
+    prev.addEventListener('click', () => {
+      if (prev.getAttribute('aria-disabled') === 'true') return;
+      // go back about one view, landing on the card start nearest to that point
+      const s = starts();
+      const want = Math.max(0, rail.scrollLeft - (rail.clientWidth - 2 * pad()));
+      let target = s.reduce((best, x) => (Math.abs(x - want) < Math.abs(best - want) ? x : best), s[0]);
+      if (target >= rail.scrollLeft - 2) target = [...s].reverse().find((x) => x < rail.scrollLeft - 2) ?? 0;
+      rail.scrollTo({ left: target, behavior: behavior() });
+    });
 
     let raf = 0;
     rail.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive: true });
     addEventListener('resize', update, { signal });
 
-    // Filters
-    document.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.filter;
-        if (btn.getAttribute('aria-pressed') === 'true') return;
-        document.querySelectorAll('[data-filter]').forEach((b) => {
-          b.setAttribute('aria-pressed', String(b === btn));
-          b.classList.toggle('is-inked', b === btn);
-        });
-        rail.classList.add('is-filtering');
-        const apply = () => {
-          cards.forEach((c) => { c.hidden = key !== 'all' && c.dataset.platform !== key; });
-          rail.scrollLeft = 0;
-          update();
-          requestAnimationFrame(() => rail.classList.remove('is-filtering'));
-        };
-        reduce.matches ? apply() : setTimeout(apply, 90);
-      });
-    });
-
-    // Mouse drag to scroll (touch & trackpads scroll natively)
+    // ---- mouse drag with momentum (touch & trackpads scroll natively) ----
     let dragging = false, moved = false, startX = 0, startLeft = 0;
+    let samples: { x: number; t: number }[] = [];
     rail.addEventListener('pointerdown', (e) => {
       if (e.pointerType !== 'mouse' || e.button !== 0) return;
       dragging = true; moved = false; startX = e.clientX; startLeft = rail.scrollLeft;
+      samples = [{ x: e.clientX, t: e.timeStamp }];
     });
     addEventListener('pointermove', (e) => {
       if (!dragging) return;
       const dx = e.clientX - startX;
-      if (!moved && Math.abs(dx) > 6) { moved = true; rail.classList.add('is-dragging'); }
-      if (moved) rail.scrollLeft = startLeft - dx;
+      if (!moved && Math.abs(dx) > 8) { moved = true; rail.classList.add('is-dragging'); setCursor('Drag'); }
+      if (!moved) return;
+      rail.scrollLeft = startLeft - dx;
+      samples.push({ x: e.clientX, t: e.timeStamp });
+      if (samples.length > 8) samples.shift();
     }, { signal });
-    addEventListener('pointerup', () => {
+    addEventListener('pointerup', (e) => {
       if (!dragging) return;
       dragging = false;
-      if (moved) {
-        rail.classList.remove('is-dragging');
-        // settle on the nearest card
-        const s = step();
-        rail.scrollTo({ left: Math.round(rail.scrollLeft / s) * s, behavior: reduce.matches ? 'auto' : 'smooth' });
-      }
+      if (!moved) return;
+      rail.classList.remove('is-dragging');
+      setCursor(null);
+      // velocity over the last ~100ms, projected forward, then settle on the nearest card start
+      const recent = samples.filter((s) => e.timeStamp - s.t <= 100);
+      const a = recent[0], b = recent[recent.length - 1];
+      const v = a && b && b.t > a.t ? (b.x - a.x) / (b.t - a.t) : 0;   // px/ms, + = dragged right
+      const projected = rail.scrollLeft - v * 320;
+      const s = starts();
+      const target = s.reduce((best, x) => (Math.abs(x - projected) < Math.abs(best - projected) ? x : best), s[0]);
+      rail.scrollTo({ left: target, behavior: behavior() });
     }, { signal });
     rail.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
     rail.addEventListener('dragstart', (e) => e.preventDefault());
@@ -174,7 +182,7 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     // Arrow keys move between cards
     rail.addEventListener('keydown', (e) => {
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-      const items = visibleCards().map((c) => c.querySelector<HTMLElement>('a.card-hit')).filter(Boolean) as HTMLElement[];
+      const items = cards.map((c) => c.querySelector<HTMLElement>('.card-hit')).filter((el): el is HTMLElement => !!el && el.tagName === 'A');
       const i = items.indexOf(document.activeElement as HTMLElement);
       if (i < 0) return;
       const n = items[i + (e.key === 'ArrowRight' ? 1 : -1)];
@@ -182,6 +190,38 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     });
 
     update();
+
+    // ---- "View case" label that follows the pointer over a live card ----
+    const pill = document.querySelector<HTMLElement>('[data-cursor-pill]');
+    const pillText = document.querySelector<HTMLElement>('[data-cursor-text]');
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    let tx = 0, ty = 0, cx = 0, cy = 0, follow = 0, label: string | null = null;
+    const setCursor = (text: string | null) => {
+      label = text;
+      if (!pill || !pillText) return;
+      if (text) pillText.textContent = text;
+      pill.classList.toggle('is-on', !!text);
+      pill.classList.toggle('is-drag', text === 'Drag');
+    };
+    const loop = () => {
+      // ease toward the pointer: 1:1 feels glued on, this trails by a hair like a pen
+      cx += (tx - cx) * 0.3; cy += (ty - cy) * 0.3;
+      if (pill) pill.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0)`;
+      follow = Math.abs(tx - cx) + Math.abs(ty - cy) > 0.3 ? requestAnimationFrame(loop) : 0;
+    };
+    if (fine && pill) {
+      rail.addEventListener('pointermove', (e) => {
+        tx = e.clientX; ty = e.clientY;
+        if (!label) { cx = tx; cy = ty; }
+        if (!dragging) {
+          const hit = (e.target as HTMLElement).closest<HTMLElement>('[data-cursor]');
+          setCursor(hit ? hit.dataset.cursor! : null);
+        }
+        if (!follow) follow = requestAnimationFrame(loop);
+      });
+      rail.addEventListener('pointerleave', () => { if (!dragging) setCursor(null); });
+      signal.addEventListener('abort', () => cancelAnimationFrame(follow));
+    }
 
     // warm the case hero as soon as a card shows intent (hover, focus or touch)
     const warmed = new Set<string>();
@@ -311,24 +351,21 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
   .intro span { display: block; }
   /* narrower desktops: let the three lines re-wrap naturally inside the column */
   @media (max-width: 1380px) { .intro { width: auto; } .intro span { display: inline; } }
-
   /* ---------- Toolbar ---------- */
   .toolbar {
     display: flex; align-items: center; justify-content: space-between; gap: 24px;
-    margin-top: 36px; height: 48px;
+    margin-top: 28px; min-height: 48px;
   }
-  .filters { display: flex; gap: 28px; }
-  .filter {
-    position: relative; background: none; border: 0; padding: 0; cursor: pointer;
-    font-size: 18px; color: var(--pencil); min-height: 44px;
-    transition: color 150ms var(--ease-ui);
-  }
-  .filter .count { font-variant-numeric: tabular-nums; }
-  .filter[aria-pressed="true"] { color: var(--ink); }
-  @media (hover: hover) { .filter:hover { color: var(--ink); } }
+  .work-label { margin: 0; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .work-label .hand { font-size: 28px; line-height: 1; }
+  .work-count { font-size: 15px; color: var(--pencil); }
 
   .controls { display: flex; align-items: center; gap: 0; margin-right: -8px; }
-  .counter { margin: 0 8px 0 0; font-size: 15px; color: var(--pencil); font-variant-numeric: tabular-nums; }
+  .counter { margin: 0 12px 0 0; display: grid; justify-items: end; gap: 2px; font-size: 15px; color: var(--pencil); font-variant-numeric: tabular-nums; }
+  .progress { width: 72px; height: 6px; overflow: visible; }
+  .progress path { fill: none; stroke-width: 2; stroke-linecap: round; }
+  .progress .track { stroke: var(--rule-strong); }
+  .progress .fill { stroke: var(--pen); stroke-dasharray: 1 2; stroke-dashoffset: 0.95; transition: stroke-dashoffset 260ms var(--ease-ui); }
   .arrow {
     width: 48px; height: 48px; display: grid; place-items: center; cursor: pointer;
     border: 0; background: none; border-radius: 999px; position: relative; color: var(--ink);
@@ -341,26 +378,24 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
   .arrow :global(svg) { position: relative; }
   .arrow[aria-disabled="true"] { opacity: 0.35; cursor: default; }
   .arrow:not([aria-disabled="true"]):active { transform: scale(0.94); }
-  @media (hover: hover) { .arrow:not([aria-disabled="true"]):hover::before { background: var(--lift); } }
+  @media (hover: hover) and (pointer: fine) { .arrow:not([aria-disabled="true"]):hover::before { background: var(--lift); } }
 
   /* ---------- Rail ---------- */
+  /* photo height fits the page to one screen on common laptops, and grows on taller ones */
+  .landing { --frame-h: clamp(206px, calc(100svh - 628px), calc(var(--col) * 0.96)); padding-bottom: 12px; }
   .rail {
-    list-style: none; margin: 4px calc(-1 * var(--gutter)) 0; padding: 12px var(--gutter) 24px;
+    list-style: none; margin: 4px calc(-1 * var(--gutter)) 0; padding: 12px var(--gutter) 20px;
     display: flex; gap: var(--gap);
     overflow-x: auto; overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter);
     scrollbar-width: none;
-    cursor: grab;
   }
   .rail::-webkit-scrollbar { display: none; }
-  .rail.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .rail.is-dragging { scroll-snap-type: none; cursor: grabbing; }
   .rail.is-dragging .card-hit { pointer-events: none; }
-  .rail.is-filtering .card { opacity: 0; transform: translateY(4px); transition-duration: 90ms; }
 
-  .card {
-    flex: 0 0 var(--col); scroll-snap-align: start;
-    transition: opacity 200ms var(--ease-ui), transform 280ms var(--ease-focal);
-  }
+  .card { position: relative; z-index: 0; flex: 0 0 var(--col); scroll-snap-align: start; }
+  .card--featured { flex-basis: calc(2 * var(--col) + var(--gap)); }
   @media (min-width: 1101px) {
     /* let the last page of cards line up with the left column */
     .card:last-child { margin-right: max(0px, calc(100vw - 2 * var(--gutter) - 3 * var(--col) - 2 * var(--gap))); }
@@ -368,45 +403,78 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
   .card-hit { position: relative; display: block; text-decoration: none; color: inherit; border-radius: 18px; }
   .card-hit:focus-visible { outline: none; }
 
-  /* the hover lift: a paper panel 12px proud of the card */
-  .card-hit::before {
+  /* the hover lift: a paper panel 12px proud of the card (live cards only) */
+  a.card-hit::before {
     content: ''; position: absolute; inset: -12px; z-index: -1;
     background: var(--lift); border-radius: 18px; box-shadow: var(--shadow-lift);
     opacity: 0; transform: scale(0.985);
     transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui);
   }
-  .card { position: relative; z-index: 0; }
 
-  .card-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 12px; min-height: 56px; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; height: 104px; }
+  .card-text { min-width: 0; }
   h3 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 560; letter-spacing: -0.01em; font-variation-settings: 'opsz' 24; }
-  .tags { margin: 0; font-size: 15px; line-height: 22px; color: var(--pencil); }
-  .cta {
-    display: inline-flex; align-items: center; gap: 6px; flex: none;
-    font-size: 15px; line-height: 22px; color: var(--pen);
-    opacity: 0; transform: translateX(-4px);
-    transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui);
+  .card--featured h3 { font-size: 26px; line-height: 32px; }
+  .line {
+    margin: 4px 0 0; font-size: 16px; line-height: 23px; color: var(--ink); max-width: 46ch;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-  div.card-hit .cta { color: var(--pencil); }
-  /* "Read the case" gets the pen stroke too when its card is hovered */
-  a.card-hit .cta { background: var(--pen-line) no-repeat 0 100% / 0% 7px; padding-bottom: 5px; transition: opacity 200ms var(--ease-ui), transform 260ms var(--ease-ui), background-size 160ms var(--ease-ui); }
-  @media (hover: hover) and (pointer: fine) {
-    a.card-hit:hover .cta { background-size: 100% 7px; transition: opacity 200ms var(--ease-ui) 40ms, transform 260ms var(--ease-ui) 40ms, background-size 420ms var(--ease-focal) 120ms; }
-  }
-  a.card-hit:focus-visible .cta { background-size: 100% 7px; }
+  .meta { margin: 6px 0 0; font-size: 14px; line-height: 20px; color: var(--pencil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ph { color: var(--pencil); opacity: 0.85; }
+  .card--wip .line { color: var(--pencil); }
 
-  .frame { aspect-ratio: 400 / 384; overflow: hidden; background: var(--placeholder); border-radius: 0; transition: border-radius 220ms var(--ease-ui); }
+  .cta {
+    display: inline-flex; align-items: center; gap: 6px; flex: none; margin-top: 4px;
+    font-size: 15px; line-height: 22px; color: var(--pen);
+    background: var(--pen-line) no-repeat 0 100% / 100% 7px; padding-bottom: 5px;
+  }
+  /* with a mouse the cursor label does this job, so the inline link only shows for keyboard and touch */
+  @media (hover: hover) and (pointer: fine) {
+    .cta { opacity: 0; transform: translateX(-4px); transition: opacity 150ms var(--ease-ui), transform 220ms var(--ease-ui); }
+    a.card-hit:focus-visible .cta { opacity: 1; transform: none; }
+  }
+  .wip { font-size: 19px; line-height: 1; color: var(--pen); }
+
+  .frame { height: var(--frame-h); overflow: hidden; background: var(--placeholder); border-radius: 0; transition: border-radius 220ms var(--ease-ui); }
   .frame :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-focal); user-select: none; -webkit-user-drag: none; }
 
-  @media (hover: hover) {
-    .card-hit:hover::before, .card-hit:hover .cta { transition-delay: 40ms; }
-    .card-hit:hover::before { opacity: 1; transform: none; }
-    .card-hit:hover .cta { opacity: 1; transform: none; }
-    .card-hit:hover .frame { border-radius: 10px; }
-    a.card-hit:hover .frame :global(img) { transform: scale(1.02); }
+  @media (hover: hover) and (pointer: fine) {
+    a.card-hit { cursor: none; }                                   /* the pen label replaces it */
+    a.card-hit:hover::before { opacity: 1; transform: none; transition-delay: 40ms; }
+    a.card-hit:hover .frame { border-radius: 10px; }
+    a.card-hit:hover .frame :global(img) { transform: scale(1.025); }
   }
-  .card-hit:focus-visible::before { opacity: 1; transform: none; box-shadow: var(--shadow-lift), 0 0 0 2px var(--pen); transition-duration: 150ms; }
-  .card-hit:focus-visible .cta { opacity: 1; transform: none; transition-duration: 150ms; }
-  .card-hit:focus-visible .frame { border-radius: 10px; }
+  a.card-hit:focus-visible::before { opacity: 1; transform: none; box-shadow: var(--shadow-lift), 0 0 0 2px var(--pen); transition-duration: 150ms; }
+  a.card-hit:focus-visible .frame { border-radius: 10px; }
+
+  /* first full load only: photos wipe in left to right, one after another, after the pen circle */
+  :global(html.wipe) .frame :global(img) { animation: photo-wipe 1s cubic-bezier(0.77, 0, 0.175, 1) both; animation-delay: calc(0.55s + var(--i) * 0.09s); }
+  @keyframes photo-wipe { from { clip-path: inset(0 100% 0 0); transform: scale(1.06); } }
+
+  /* ---------- Pointer label ---------- */
+  .cursor {
+    position: fixed; left: 0; top: 0; z-index: 20; pointer-events: none;
+    display: none; align-items: center; gap: 6px;
+    margin: -22px 0 0 -46px; padding: 0 16px; height: 44px; border-radius: 999px;
+    background: var(--ink); color: var(--paper); font-size: 15px; font-weight: 560;
+    box-shadow: 0 8px 24px rgba(30, 20, 5, 0.18);
+  }
+  @media (hover: hover) and (pointer: fine) { .cursor { display: inline-flex; } }
+  .cursor > span { display: inline-block; opacity: 0; transform: scale(0.6); transition: opacity 160ms var(--ease-ui), transform 220ms var(--ease-ui); }
+  .cursor { scale: 0.6; opacity: 0; transition: opacity 160ms var(--ease-ui), scale 240ms var(--ease-ui); }
+  .cursor.is-on { opacity: 1; scale: 1; }
+  .cursor.is-on > span { opacity: 1; transform: none; }
+  .cursor.is-drag :global(svg) { display: none; }
+
+  /* ---------- Closing line ---------- */
+  .closing {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px 32px; flex-wrap: wrap;
+    margin-top: 4px; min-height: 44px;
+  }
+  .proof { margin: 0; font-size: 16px; color: var(--pencil); }
+  .proof strong { color: var(--ink); font-weight: 560; }
+  .closing-links { margin: 0; display: flex; gap: 32px; }
+  .closing-links .link { font-size: 16px; color: var(--ink); background-color: transparent; border: 0; padding: 0 0 4px; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; --pen-y: calc(100% - 8px); }
 
   /* ---------- Responsive ---------- */
   @media (max-width: 1100px) {
@@ -414,28 +482,31 @@ const filters: { key: 'all' | Platform; label: string; count: number }[] = [
     .landing {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas: "head" "intro" "work";
+      --frame-h: calc(var(--col) * 0.8);
     }
     .intro { justify-self: start; width: auto; max-width: 560px; margin-top: 28px; }
     .intro span { display: inline; }
   }
   @media (max-width: 720px) {
-    .landing { grid-template-areas: "head" "work" "intro"; padding-top: 24px; }
+    .landing { padding-top: 24px; --frame-h: 68vw; }
     h1 { font-size: 40px; line-height: 1; }
     .circled { margin-left: 0.3em; }
     .note { padding-left: 0; justify-content: flex-end; font-size: 24px; margin-top: 10px; padding-right: 8px; }
-    .toolbar { margin-top: 28px; height: auto; }
-    .filters { gap: 18px; }
-    .filter { font-size: 17px; }
-    .counter, .arrow { display: none; }
+    .intro { margin-top: 16px; font-size: 18px; line-height: 27px; }      /* who you are, before the photos */
+    .toolbar { margin-top: 32px; min-height: 0; }
     .controls { display: none; }
-    .rail { cursor: auto; }
-    .card .cta { display: none; }
-    .card-top { min-height: 0; }
-    .intro { margin-top: 20px; font-size: 18px; line-height: 28px; }
+    .card--featured { flex-basis: 86vw; }
+    .card--featured h3 { font-size: 22px; line-height: 28px; }
+    .card-top { height: auto; }
+    .line { -webkit-line-clamp: 3; }
+    .cta { display: none; }
+    .closing { flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ring { animation: none; }
     .ring path, .note .shaft, .note .tip { animation: none; stroke-dashoffset: 0; }
     .note-text { animation: none; clip-path: none; }
+    :global(html.wipe) .frame :global(img) { animation: none; }
+    .cursor, .cursor > span { transition: opacity 150ms ease; }
   }
 </style>
