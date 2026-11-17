@@ -30,7 +30,10 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
       </p>
     </section>
 
-    <p class="intro"><span>Senior UX designer and researcher with</span> <span>8+&nbsp;years advancing financial inclusion</span> <span>through digital financial products.</span></p>
+    <div class="intro-col">
+      <p class="intro"><span>Senior UX designer and researcher with</span> <span>8+&nbsp;years advancing financial inclusion</span> <span>through digital financial products.</span></p>
+      <p class="proof">Now at <strong>KCB Bank Group</strong> · before that M-Pesa Africa and Twiga&nbsp;Foods</p>
+    </div>
 
     <section class="work" id="work" aria-labelledby="work-title">
       <div class="toolbar">
@@ -53,7 +56,7 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
           const featured = i === 0 && p.live;
           return (
             <li class:list={['card', { 'card--featured': featured, 'card--wip': !href }]} style={`--i:${i}`}>
-              <Tag class="card-hit" href={href ?? undefined} data-hero={heroSrc[p.slug]} data-cursor={href ? 'View case' : undefined}>
+              <Tag class="card-hit" href={href ?? undefined} data-hero={heroSrc[p.slug]} data-cursor={href ? 'View case' : 'Write-up soon'}>
                 <div class="card-top">
                   <div class="card-text">
                     <h3>{p.title}{!href && <span class="visually-hidden"> (case study in progress)</span>}</h3>
@@ -73,13 +76,6 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
         })}
       </ul>
 
-      <div class="closing">
-        <p class="proof">Now at <strong>KCB Bank Group</strong> · before that M-Pesa Africa and Twiga Foods</p>
-        <p class="closing-links">
-          <a class="link" href="/experience">Experience</a>
-          <button type="button" class="link" data-open-contact>Write to me</button>
-        </p>
-      </div>
     </section>
   </div>
   <div class="cursor" data-cursor-pill aria-hidden="true"><span data-cursor-text>View case</span><PenArrow /></div>
@@ -201,7 +197,7 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
       if (!pill || !pillText) return;
       if (text) pillText.textContent = text;
       pill.classList.toggle('is-on', !!text);
-      pill.classList.toggle('is-drag', text === 'Drag');
+      pill.classList.toggle('is-drag', text !== 'View case');   // the arrow only when there's somewhere to go
     };
     const loop = () => {
       // ease toward the pointer: 1:1 feels glued on, this trails by a hair like a pen
@@ -260,7 +256,7 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
     padding-bottom: 48px;
   }
   .head { grid-area: head; }
-  .intro { grid-area: intro; }
+  .intro-col { grid-area: intro; justify-self: end; width: max-content; max-width: 100%; }
   .work { grid-area: work; min-width: 0; }
 
   /* ---------- Headline ---------- */
@@ -350,11 +346,14 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   }
   .intro span { display: block; }
   /* narrower desktops: let the three lines re-wrap naturally inside the column */
-  @media (max-width: 1380px) { .intro { width: auto; } .intro span { display: inline; } }
+  @media (max-width: 1380px) { .intro-col, .intro { width: auto; } .intro span { display: inline; } }
+  /* real places, real roles: proof sits right under who you are, sized to the intro's width */
+  .proof { width: 0; min-width: 100%; margin: 14px 0 0; font-size: 15px; line-height: 22px; color: var(--pencil); }
+  .proof strong { color: var(--ink); font-weight: 560; }
   /* ---------- Toolbar ---------- */
   .toolbar {
     display: flex; align-items: center; justify-content: space-between; gap: 24px;
-    margin-top: 28px; min-height: 48px;
+    margin-top: 20px; min-height: 48px;
   }
   .work-label { margin: 0; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
   .work-label .hand { font-size: 28px; line-height: 1; }
@@ -382,7 +381,15 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
 
   /* ---------- Rail ---------- */
   /* photo height fits the page to one screen on common laptops, and grows on taller ones */
-  .landing { --frame-h: clamp(206px, calc(100svh - 628px), calc(var(--col) * 0.96)); padding-bottom: 12px; }
+  /* the photos take whatever height is left on one screen (the toolbar and closing row are gone
+     from below the rail), up to roughly square on tall screens */
+  .landing { --frame-h: clamp(200px, calc(100svh - 552px), calc(var(--col) * 0.96)); padding-bottom: 12px; }
+  @media (max-width: 1380px) and (min-width: 1101px) {
+    /* smaller laptops: a slightly smaller intro keeps it to three lines, so the photos keep their height */
+    .landing { --frame-h: clamp(200px, calc(100svh - 556px), calc(var(--col) * 0.96)); }
+    .intro { font-size: 18px; line-height: 27px; }
+    .proof { font-size: 14px; line-height: 21px; margin-top: 10px; }
+  }
   .rail {
     list-style: none; margin: 4px calc(-1 * var(--gutter)) 0; padding: 12px var(--gutter) 20px;
     display: flex; gap: var(--gap);
@@ -403,8 +410,8 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   .card-hit { position: relative; display: block; text-decoration: none; color: inherit; border-radius: 18px; }
   .card-hit:focus-visible { outline: none; }
 
-  /* the hover lift: a paper panel 12px proud of the card (live cards only) */
-  a.card-hit::before {
+  /* the hover lift: a paper panel 12px proud of the card */
+  .card-hit::before {
     content: ''; position: absolute; inset: -12px; z-index: -1;
     background: var(--lift); border-radius: 18px; box-shadow: var(--shadow-lift);
     opacity: 0; transform: scale(0.985);
@@ -439,10 +446,10 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   .frame :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-focal); user-select: none; -webkit-user-drag: none; }
 
   @media (hover: hover) and (pointer: fine) {
-    a.card-hit { cursor: none; }                                   /* the pen label replaces it */
-    a.card-hit:hover::before { opacity: 1; transform: none; transition-delay: 40ms; }
-    a.card-hit:hover .frame { border-radius: 10px; }
-    a.card-hit:hover .frame :global(img) { transform: scale(1.025); }
+    .card-hit { cursor: none; }                                    /* the pen label replaces it */
+    .card-hit:hover::before { opacity: 1; transform: none; transition-delay: 40ms; }
+    .card-hit:hover .frame { border-radius: 10px; }
+    .card-hit:hover .frame :global(img) { transform: scale(1.025); }
   }
   a.card-hit:focus-visible::before { opacity: 1; transform: none; box-shadow: var(--shadow-lift), 0 0 0 2px var(--pen); transition-duration: 150ms; }
   a.card-hit:focus-visible .frame { border-radius: 10px; }
@@ -466,16 +473,6 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   .cursor.is-on > span { opacity: 1; transform: none; }
   .cursor.is-drag :global(svg) { display: none; }
 
-  /* ---------- Closing line ---------- */
-  .closing {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px 32px; flex-wrap: wrap;
-    margin-top: 4px; min-height: 44px;
-  }
-  .proof { margin: 0; font-size: 16px; color: var(--pencil); }
-  .proof strong { color: var(--ink); font-weight: 560; }
-  .closing-links { margin: 0; display: flex; gap: 32px; }
-  .closing-links .link { font-size: 16px; color: var(--ink); background-color: transparent; border: 0; padding: 0 0 4px; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; --pen-y: calc(100% - 8px); }
-
   /* ---------- Responsive ---------- */
   @media (max-width: 1100px) {
     .note { padding-left: calc(clamp(40px, 4.2vw, 60px) * 6.2); }
@@ -484,7 +481,8 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
       grid-template-areas: "head" "intro" "work";
       --frame-h: calc(var(--col) * 0.8);
     }
-    .intro { justify-self: start; width: auto; max-width: 560px; margin-top: 28px; }
+    .intro-col { justify-self: start; width: auto; max-width: 560px; margin-top: 28px; }
+    .intro { width: auto; }
     .intro span { display: inline; }
   }
   @media (max-width: 720px) {
@@ -492,7 +490,8 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
     h1 { font-size: 40px; line-height: 1; }
     .circled { margin-left: 0.3em; }
     .note { padding-left: 0; justify-content: flex-end; font-size: 24px; margin-top: 10px; padding-right: 8px; }
-    .intro { margin-top: 16px; font-size: 18px; line-height: 27px; }      /* who you are, before the photos */
+    .intro-col { margin-top: 16px; }
+    .intro { font-size: 18px; line-height: 27px; }      /* who you are, before the photos */
     .toolbar { margin-top: 32px; min-height: 0; }
     .controls { display: none; }
     .card--featured { flex-basis: 86vw; }
@@ -500,7 +499,6 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
     .card-top { height: auto; }
     .line { -webkit-line-clamp: 3; }
     .cta { display: none; }
-    .closing { flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ring { animation: none; }
