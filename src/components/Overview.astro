@@ -18,7 +18,8 @@ const kase = (await getEntry('cases', caseSlug)) ?? (await getEntry('cases', 'kc
 const d = kase.data;
 
 const img = (src: ImageMetadata, width: number) => getImage({ src, width, format: 'webp' }).then((r) => r.src);
-const workImgs = await Promise.all(projects.slice(0, 4).map((p) => img(p.image, 800)));
+const workOrder = [...projects.filter((p) => p.live), ...projects.filter((p) => !p.live)];
+const workImgs = await Promise.all(workOrder.slice(0, 4).map((p) => img(p.image, 800)));
 const caseHero = await img(d.hero, 1920);
 const portrait = expPhoto ? await img(expPhoto, 880) : '';
 
@@ -48,11 +49,10 @@ const headerNav = ['Work', 'Experience', 'Contact'];
             <p class="pv-intro">Senior UX designer and researcher with 8+&nbsp;years advancing financial inclusion through digital financial products.<span class="pv-proof">Now at <b>KCB Bank Group</b> · before that M-Pesa Africa and Twiga&nbsp;Foods</span></p>
             <p class="pv-filters"><span class="pv-sel">selected work</span><span>{projects.filter((p) => p.live).length} case study · {projects.filter((p) => !p.live).length} in progress</span></p>
             <div class="pv-rail">
-              {projects.slice(0, 4).map((p, i) => (
-                <div class:list={['pv-card', { 'pv-feat': i === 0 }]}>
-                  <p class="pv-t">{p.title}</p>
-                  <p class="pv-line">{p.line}</p>
-                  <p class="pv-tags">{platformLabel[p.platform]} · {p.field} · {p.role} · {p.year}</p>
+              {[...projects.filter((p) => p.live), ...projects.filter((p) => !p.live)].slice(0, 4).map((p, i) => (
+                <div class="pv-card">
+                  <p class="pv-t">{p.title}{!p.live && <span class="pv-wip">in progress</span>}</p>
+
                   <img src={workImgs[i]} alt="" loading="lazy" decoding="async" />
                 </div>
               ))}
@@ -361,11 +361,11 @@ const headerNav = ['Work', 'Experience', 'Contact'];
   .pv-filters { gap: 16px !important; font-size: 15px !important; margin-top: 28px !important; }
   .pv-rail { grid-column: 1 / -1; display: flex; gap: var(--gap); margin-top: 16px; }
   .pv-card { flex: 0 0 var(--col); }
-  .pv-feat { flex-basis: calc(2 * var(--col) + var(--gap)); }
   .pv-line { margin: 4px 0 0; font-size: 16px; line-height: 23px; height: 46px; overflow: hidden; }
-  .pv-t { margin: 0; font-size: 22px; line-height: 28px; font-weight: 560; }
+  .pv-t { margin: 0; display: flex; justify-content: space-between; align-items: baseline; font-size: 22px; line-height: 28px; font-weight: 560; }
+  .pv-wip { font-family: var(--hand); font-weight: 500; font-size: 19px; color: var(--pen); }
   .pv-tags { margin: 6px 0 12px; font-size: 14px; line-height: 20px; color: var(--pencil); white-space: nowrap; overflow: hidden; }
-  .pv-card img { width: 100%; height: clamp(200px, calc(100vh - 552px), calc(var(--col) * 0.96)); object-fit: cover; background: var(--placeholder); }
+  .pv-card img { width: 100%; height: calc(clamp(200px, calc(100vh - 552px), calc(var(--col) * 0.96)) + 76px); margin-top: 12px; object-fit: cover; background: var(--placeholder); }
 
   .pv-case { padding-top: 40px; }
   .pv-back { margin: 0; font-size: 17px; color: var(--pencil); min-height: 44px; display: flex; align-items: center; }
