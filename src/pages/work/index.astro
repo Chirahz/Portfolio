@@ -1,0 +1,395 @@
+---
+import { Image, getImage } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import PenArrow from '../../components/PenArrow.astro';
+import PenStroke from '../../components/PenStroke.astro';
+import { entries, areas } from '../../data/index-entries';
+
+const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
+const peek = Object.fromEntries(await Promise.all(entries.filter((e) => e.image).map(async (e) =>
+  [e.slug, (await getImage({ src: e.image!, width: 720, format: 'webp' })).src])));
+// same file the case page's hero uses, so the morph lands on a cached image
+const hero = Object.fromEntries(await Promise.all(entries.filter((e) => e.status === 'case' && e.image).map(async (e) =>
+  [e.slug, (await getImage({ src: e.image!, width: 1920, format: 'webp' })).src])));
+const caseCount = entries.filter((e) => e.status === 'case').length;
+const areaCounts = Object.fromEntries(areas.map((a) => [a, entries.filter((e) => e.area === a).length]));
+const statusLabel = { progress: 'in progress', notes: 'notes' } as const;
+---
+<Base title="Index" description="Every project, in one list — case studies, work in progress and notes.">
+  <div class="ix wrap">
+    <header class="ix-head">
+      <h1 class="ix-title">
+        <span class="w"><span>Index</span></span>
+      </h1>
+      <div class="ix-sub">
+        <p class="hand ix-note">everything I've worked on</p>
+        <p class="ix-count" aria-live="polite"><span data-shown>{entries.length}</span> projects · {caseCount} case {caseCount === 1 ? 'study' : 'studies'}</p>
+      </div>
+    </header>
+
+    <div class="ix-bar">
+      <div class="filters" role="group" aria-label="Filter by area">
+        <button type="button" class="filter is-inked" data-area="all" aria-pressed="true">All <span class="n">{entries.length}</span><PenStroke /></button>
+        {areas.filter((a) => areaCounts[a]).map((a) => (
+          <button type="button" class="filter" data-area={a} aria-pressed="false">{a} <span class="n">{areaCounts[a]}</span><PenStroke /></button>
+        ))}
+      </div>
+      <div class="bar-right">
+        <label class="only"><input type="checkbox" data-only-cases /> <span>Case studies only</span></label>
+        <div class="view" role="group" aria-label="View">
+          <button type="button" data-view="list" aria-pressed="true">List</button>
+          <button type="button" data-view="grid" aria-pressed="false">Grid</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cols" aria-hidden="true">
+      <span>Year</span><span>Project</span><span>Client</span><span>Area</span><span>Role</span><span></span>
+    </div>
+
+    <ul class="rows" data-rows data-view="list">
+      {entries.map((e, i) => {
+        const live = e.status === 'case';
+        const Main = live ? 'a' : 'button';
+        return (
+          <li class:list={['row', `row--${e.status}`]} data-area={e.area} data-status={e.status} data-slug={e.slug} style={`--i:${i}`}>
+            <Main class="row-main"
+              href={live ? `/work/${e.slug}` : undefined}
+              type={live ? undefined : 'button'}
+              aria-expanded={live ? undefined : 'false'}
+              aria-controls={live ? undefined : `d-${e.slug}`}
+              data-morph={live ? 'peek' : undefined}
+              data-hero={live ? hero[e.slug] : undefined}
+              data-peek={peek[e.slug]}>
+              <span class:list={['c-year', ph(e.year)]}>{e.year}</span>
+              <span class="c-title">
+                <span class="row-thumb">
+                  {e.image
+                    ? <Image src={e.image} alt="" widths={[240, 480]} sizes="(max-width: 720px) 72px, 400px" loading={i < 6 ? 'eager' : 'lazy'} />
+                    : <span class="thumb-ph">[image]</span>}
+                </span>
+                <span class="t">{e.title}</span>
+              </span>
+              <span class:list={['c-client', ph(e.client)]}>{e.client}</span>
+              <span class="c-area">{e.area}</span>
+              <span class:list={['c-role', ph(e.role)]}>{e.role}</span>
+              <span class="c-status">
+                {live
+                  ? <span class="go">Read the case <PenArrow /></span>
+                  : <span class="hand st">{statusLabel[e.status as 'progress' | 'notes']}<span class="plus" aria-hidden="true"></span></span>}
+              </span>
+              <span class="c-line">{e.line}</span>
+            </Main>
+            {!live && (
+              <div class="row-detail" id={`d-${e.slug}`}>
+                <div><div class="detail-in">
+                  <p class="d-line">{e.line}</p>
+                  {e.notes && <ul class="d-notes">{e.notes.map((n) => <li class={ph(n)}>{n}</li>)}</ul>}
+                </div></div>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+    <p class="empty" data-empty hidden>Nothing here yet with those filters. <button type="button" class="link" data-reset>Show everything</button></p>
+  </div>
+
+  <div class="peek" data-peek-el aria-hidden="true"><img alt="" decoding="async" /></div>
+</Base>
+
+<script>
+  import { onPage, reducedMotion } from '../../scripts/page';
+  onPage((signal) => {
+    const list = document.querySelector<HTMLUListElement>('[data-rows]');
+    if (!list) return;
+    const rows = [...list.querySelectorAll<HTMLLIElement>('.row')];
+    const shownEl = document.querySelector('[data-shown]')!;
+    const empty = document.querySelector<HTMLElement>('[data-empty]')!;
+    const onlyCases = document.querySelector<HTMLInputElement>('[data-only-cases]')!;
+    const filterBtns = [...document.querySelectorAll<HTMLButtonElement>('button.filter[data-area]')];
+    const viewBtns = [...document.querySelectorAll<HTMLButtonElement>('.view button[data-view]')];
+    let area = 'all';
+
+    // ---- FLIP: rows glide to their new places instead of jumping ----
+    // once anything changes, the load entrance is over — rows shown again must not replay it
+    const settle = () => list.classList.add('is-settled');
+    setTimeout(settle, 2200);
+    const flip = (change: () => void) => {
+      settle();
+      if (reducedMotion()) { change(); return; }
+      const before = new Map(rows.filter((r) => !r.hidden).map((r) => [r, r.getBoundingClientRect()]));
+      change();
+      rows.forEach((r) => {
+        if (r.hidden) return;
+        const a = before.get(r), b = r.getBoundingClientRect();
+        if (a) {
+          const dx = a.left - b.left, dy = a.top - b.top, sx = a.width / b.width;
+          if (Math.abs(dx) + Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.01) return;
+          r.animate([{ transform: `translate3d(${dx}px, ${dy}px, 0)` }, { transform: 'none' }],
+            { duration: 520, easing: 'cubic-bezier(0.77, 0, 0.175, 1)' });
+        } else {
+          r.animate([{ opacity: 0, transform: 'translate3d(0, 12px, 0)' }, { opacity: 1, transform: 'none' }],
+            { duration: 420, delay: 120, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'backwards' });
+        }
+      });
+    };
+
+    const apply = () => flip(() => {
+      let n = 0;
+      rows.forEach((r) => {
+        const ok = (area === 'all' || r.dataset.area === area) && (!onlyCases.checked || r.dataset.status === 'case');
+        r.hidden = !ok; if (ok) n++;
+      });
+      shownEl.textContent = String(n);
+      empty.hidden = n > 0;
+    });
+
+    filterBtns.forEach((b) => b.addEventListener('click', () => {
+      if (b.getAttribute('aria-pressed') === 'true') return;
+      area = b.dataset.area!;
+      filterBtns.forEach((x) => { x.setAttribute('aria-pressed', String(x === b)); x.classList.toggle('is-inked', x === b); });
+      apply();
+    }));
+    onlyCases.addEventListener('change', apply);
+    document.querySelector('[data-reset]')?.addEventListener('click', () => {
+      onlyCases.checked = false; filterBtns[0].click(); apply();
+    });
+
+    // ---- List / Grid ----
+    const setView = (v: string, animate = true) => {
+      const go = () => {
+        list.dataset.view = v;
+        document.querySelector('.ix')!.setAttribute('data-view', v);
+        viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+      };
+      animate ? flip(go) : go();
+      try { localStorage.setItem('index-view', v); } catch {}
+      hidePeek();
+    };
+    viewBtns.forEach((b) => b.addEventListener('click', () => b.dataset.view !== list.dataset.view && setView(b.dataset.view!)));
+    try { const v = localStorage.getItem('index-view'); if (v === 'grid') setView('grid', false); } catch {}
+
+    // ---- Rows without a case study open in place ----
+    list.querySelectorAll<HTMLButtonElement>('button.row-main').forEach((btn) => btn.addEventListener('click', () => {
+      const open = btn.getAttribute('aria-expanded') !== 'true';
+      btn.setAttribute('aria-expanded', String(open));
+      btn.closest('.row')!.classList.toggle('is-open', open);
+      if (open) hidePeek();
+    }));
+
+    // ---- Hover preview: the photo floats beside the pointer, like a print held up ----
+    const peek = document.querySelector<HTMLElement>('[data-peek-el]')!;
+    const peekImg = peek.querySelector('img')!;
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, on = false, tilt = 0, lastX = 0;
+    const hidePeek = () => { on = false; peek.classList.remove('is-on'); };
+    const loop = () => {
+      cx += (tx - cx) * 0.16; cy += (ty - cy) * 0.16;
+      // lean a little in the direction of travel, settle back to a resting tilt
+      tilt += ((Math.max(-6, Math.min(6, (tx - lastX) * 0.6)) - 2.5) - tilt) * 0.12; lastX = tx;
+      peek.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0) rotate(${tilt.toFixed(2)}deg)`;
+      raf = on || Math.abs(tx - cx) + Math.abs(ty - cy) > 0.5 ? requestAnimationFrame(loop) : 0;
+    };
+    if (fine) {
+      const warmed = new Set<string>();
+      list.addEventListener('pointermove', (e) => {
+        if (list.dataset.view !== 'list') return;
+        const row = (e.target as HTMLElement).closest<HTMLElement>('.row-main');
+        const src = row?.dataset.peek;
+        tx = e.clientX + 32; ty = e.clientY - 150;
+        // no preview over an opened row: its notes are what you're reading
+        if (!src || row!.closest('.row')!.classList.contains('is-open')) { hidePeek(); return; }
+        if (!on) { cx = tx; cy = ty + 20; on = true; }
+        if (peekImg.getAttribute('src') !== src) peekImg.src = src;
+        peek.classList.add('is-on');
+        const h = row!.dataset.hero;
+        if (h && !warmed.has(h)) { warmed.add(h); const im = new Image(); im.src = h; }
+        if (!raf) raf = requestAnimationFrame(loop);
+      });
+      list.addEventListener('pointerleave', hidePeek);
+      addEventListener('scroll', hidePeek, { passive: true, signal });
+      signal.addEventListener('abort', () => cancelAnimationFrame(raf));
+    }
+  });
+</script>
+
+<style>
+  .ix { padding-top: 40px; padding-bottom: 128px; }
+
+  /* ---------- Head ---------- */
+  .ix-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px 48px; flex-wrap: wrap; }
+  .ix-title {
+    margin: 0; font-size: clamp(80px, 10vw, 152px); line-height: 0.9; font-weight: 400;
+    letter-spacing: -0.04em; font-variation-settings: 'opsz' 144;
+  }
+  .ix-title .w { display: inline-block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+  .ix-title .w > span { display: inline-block; animation: word-rise 1s var(--ease-focal) 0.15s both; }
+  @keyframes word-rise { from { transform: translateY(108%); } }
+  .ix-sub { text-align: right; padding-bottom: 12px; animation: soft-rise 0.8s var(--ease-focal) 0.45s both; }
+  .ix-note { margin: 0; font-size: 28px; line-height: 1; }
+  .ix-count { margin: 8px 0 0; font-size: 16px; color: var(--pencil); font-variant-numeric: tabular-nums; }
+  @keyframes soft-rise { from { opacity: 0; transform: translate3d(0, 12px, 0); } }
+
+  /* ---------- Bar ---------- */
+  .ix-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px 32px; flex-wrap: wrap;
+    margin-top: 48px; animation: soft-rise 0.8s var(--ease-focal) 0.55s both;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 4px 24px; }
+  .filter {
+    position: relative; background: none; border: 0; padding: 0; cursor: pointer;
+    font-size: 17px; color: var(--pencil); min-height: 44px;
+    transition: color 150ms var(--ease-ui);
+  }
+  .filter .n { font-size: 14px; font-variant-numeric: tabular-nums; }
+  .filter[aria-pressed="true"] { color: var(--ink); }
+  @media (hover: hover) and (pointer: fine) { .filter:hover { color: var(--ink); } }
+  .bar-right { display: flex; align-items: center; gap: 24px; }
+  .only { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 16px; color: var(--pencil); cursor: pointer; }
+  .only input { width: 18px; height: 18px; accent-color: var(--pen); margin: 0; }
+  .view { display: inline-flex; padding: 3px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--rule-strong); }
+  .view button {
+    min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: none; cursor: pointer;
+    font-size: 15px; color: var(--pencil); transition: background-color 200ms var(--ease-ui), color 150ms var(--ease-ui);
+  }
+  .view button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+  /* ---------- List ---------- */
+  .cols, .row-main {
+    display: grid; align-items: center; column-gap: 24px;
+    grid-template-columns: 72px minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.1fr) 168px;
+  }
+  .cols { margin-top: 32px; padding-bottom: 10px; font-size: 14px; color: var(--pencil); animation: soft-rise 0.8s var(--ease-focal) 0.6s both; }
+  .rows { list-style: none; margin: 0; padding: 0; position: relative; }
+  .row { position: relative; }
+  .row::before, .row:last-child::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--rule-strong);
+    transform-origin: 0 50%; animation: rule-draw 0.9s cubic-bezier(0.77, 0, 0.175, 1) both;
+    animation-delay: calc(0.6s + var(--i) * 0.05s);
+  }
+  .row:last-child::after { top: auto; bottom: 0; }
+  .rows.is-settled :is(.row-main, .row::before, .row:last-child::after) { animation: none; }
+  @keyframes rule-draw { from { transform: scaleX(0); } }
+  .row-main {
+    width: 100%; min-height: 72px; padding: 0; border: 0; background: none; text-align: left;
+    font: inherit; color: var(--ink); text-decoration: none; cursor: pointer; position: relative;
+    animation: soft-rise 0.7s var(--ease-focal) both; animation-delay: calc(0.7s + var(--i) * 0.05s);
+  }
+  .row-main::after {   /* a faint paper wash behind the row on hover */
+    content: ''; position: absolute; inset: 0 -16px; z-index: -1; border-radius: 10px;
+    background: var(--lift); opacity: 0; transition: opacity 200ms var(--ease-ui);
+  }
+  @media (hover: hover) and (pointer: fine) { .row-main:hover::after { opacity: 1; } }
+  .row-main:focus-visible { outline: none; }
+  .row-main:focus-visible::after { opacity: 1; box-shadow: 0 0 0 2px var(--pen); }
+  .c-year, .c-client, .c-area, .c-role { font-size: 16px; color: var(--pencil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .c-year { font-variant-numeric: tabular-nums; }
+  .c-title { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .t { font-size: 24px; line-height: 1.2; letter-spacing: -0.012em; font-variation-settings: 'opsz' 36; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: transform 300ms var(--ease-ui); }
+  @media (hover: hover) and (pointer: fine) { .row-main:hover .t { transform: translateX(6px); } }
+  .row-thumb { display: none; }
+  .c-status { justify-self: end; font-size: 15px; }
+  .go {
+    display: inline-flex; align-items: center; gap: 6px; color: var(--pen); white-space: nowrap;
+    background: var(--pen-line) no-repeat 0 100% / 0% 7px; padding-bottom: 5px;
+    transition: background-size 160ms var(--ease-ui);
+  }
+  @media (hover: hover) and (pointer: fine) { .row-main:hover .go { background-size: 100% 7px; transition: background-size 420ms var(--ease-focal) 60ms; } }
+  .st { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; color: var(--pencil); }
+  .row--progress .st { color: var(--pen); }
+  .plus { position: relative; width: 12px; height: 12px; transition: transform 300ms var(--ease-ui); }
+  .plus::before, .plus::after { content: ''; position: absolute; left: 0; top: 5px; width: 12px; height: 1.6px; border-radius: 2px; background: currentColor; }
+  .plus::after { transform: rotate(90deg); }
+  .row.is-open .plus { transform: rotate(45deg); }
+  .c-line { display: none; }
+
+  /* opened row */
+  .row-detail { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 460ms cubic-bezier(0.77, 0, 0.175, 1); }
+  .row-detail > div { min-height: 0; overflow: hidden; }
+  .row.is-open .row-detail { grid-template-rows: 1fr; }
+  .detail-in {
+    margin-left: calc(72px + 24px); padding: 0 0 28px; max-width: 64ch;
+    opacity: 0; transform: translate3d(0, -6px, 0); transition: opacity 200ms var(--ease-ui), transform 300ms var(--ease-ui);
+  }
+  .row.is-open .detail-in { opacity: 1; transform: none; transition-delay: 140ms; }
+  .d-line { margin: 0; font-size: 18px; line-height: 1.55; }
+  .d-notes { margin: 10px 0 0; padding: 0; list-style: none; }
+  .d-notes li { position: relative; padding-left: 22px; margin-top: 6px; font-size: 16px; line-height: 1.5; }
+  .d-notes li::before { content: ''; position: absolute; left: 0; top: 0.75em; width: 10px; height: 2px; border-radius: 2px; background: var(--pencil); opacity: 0.6; }
+  .ph { color: var(--pencil); opacity: 0.85; }
+  .empty { margin: 48px 0 0; font-size: 18px; color: var(--pencil); }
+  .empty button { font: inherit; color: var(--ink); background-color: transparent; border: 0; cursor: pointer; }
+
+  /* ---------- Hover preview ---------- */
+  .peek {
+    position: fixed; left: 0; top: 0; z-index: 15; pointer-events: none;
+    width: 300px; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 6px; background: var(--placeholder);
+    box-shadow: 0 2px 6px rgba(40, 28, 8, 0.12), 0 24px 48px rgba(40, 28, 8, 0.18);
+    opacity: 0; scale: 0.92; transition: opacity 180ms var(--ease-ui), scale 320ms var(--ease-focal);
+    will-change: transform;
+  }
+  .peek.is-on { opacity: 1; scale: 1; }
+  .peek img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ---------- Grid view: same rows, laid out as cards ---------- */
+  .ix[data-view="grid"] .cols { display: none; }
+  .rows[data-view="grid"] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px var(--gap); margin-top: 32px; }
+  .rows[data-view="grid"] .row::before, .rows[data-view="grid"] .row:last-child::after { display: none; }
+  .rows[data-view="grid"] .row-main { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-height: 0; }
+  .rows[data-view="grid"] .row-main::after { inset: -12px; border-radius: 18px; box-shadow: var(--shadow-lift); }
+  .rows[data-view="grid"] .c-title { order: 1; flex-direction: column; align-items: stretch; gap: 12px; }
+  .rows[data-view="grid"] .row-thumb { order: -1; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: var(--placeholder); }
+  .rows[data-view="grid"] .row-thumb :global(img) { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-focal); }
+  @media (hover: hover) and (pointer: fine) { .rows[data-view="grid"] .row-main:hover .row-thumb :global(img) { transform: scale(1.03); } .rows[data-view="grid"] .row-main:hover .t { transform: none; } }
+  .rows[data-view="grid"] .t { font-size: 22px; }
+  .rows[data-view="grid"] .c-line { display: block; order: 2; margin-top: 6px; font-size: 16px; line-height: 1.5; color: var(--pencil); }
+  .rows[data-view="grid"] .c-year, .rows[data-view="grid"] .c-client, .rows[data-view="grid"] .c-role { display: none; }
+  .rows[data-view="grid"] .c-area { order: 3; margin-top: 8px; font-size: 14px; }
+  .rows[data-view="grid"] .c-status { order: 0; justify-self: auto; position: absolute; right: 12px; top: 12px; z-index: 1; padding: 4px 10px; border-radius: 999px; background: var(--paper); }
+  .rows[data-view="grid"] .go { background-image: none; padding: 0; }
+  .rows[data-view="grid"] .row-detail { display: none; }
+  .thumb-ph { display: grid; place-items: center; width: 100%; height: 100%; color: var(--pencil); font-size: 15px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1100px) {
+    .cols, .row-main { grid-template-columns: 64px minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr) 150px; }
+    .cols span:nth-child(5), .c-role { display: none; }
+    .rows[data-view="grid"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .ix { padding-top: 24px; padding-bottom: 96px; }
+    .ix-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .ix-sub { text-align: left; padding-bottom: 0; }
+    .ix-note { font-size: 24px; }
+    .ix-bar { margin-top: 32px; }
+    /* one swipeable row of filters instead of three wrapped lines */
+    .filters { flex-wrap: nowrap; gap: 0 20px; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); width: calc(100% + 2 * var(--gutter)); }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter { flex: none; white-space: nowrap; }
+    .filter { font-size: 16px; }
+    .bar-right { width: 100%; justify-content: space-between; }
+    .cols { display: none; }
+    /* phones: thumbnail on the left, title and details stacked */
+    .row-main { display: grid; grid-template-columns: 72px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 16px; row-gap: 2px; padding: 16px 0; min-height: 0; align-items: start; }
+    .c-title { display: contents; }
+    .t { grid-column: 2; grid-row: 1; }
+    .row-thumb { display: block; grid-column: 1; grid-row: 1 / 4; width: 72px; height: 88px; overflow: hidden; border-radius: 4px; background: var(--placeholder); }
+    .row-thumb :global(img) { width: 100%; height: 100%; object-fit: cover; }
+    .t { font-size: 20px; white-space: normal; }
+    .c-year, .c-client, .c-role { display: none; }
+    .c-area { grid-column: 2; grid-row: 2; font-size: 14px; }
+    .c-status { grid-column: 2; grid-row: 3; justify-self: start; }
+    .st { font-size: 18px; }
+    .detail-in { margin-left: 88px; }
+    .rows[data-view="grid"] { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+    .rows[data-view="grid"] .row-main { padding: 0; }
+    .rows[data-view="grid"] .c-title { display: flex; }
+    .rows[data-view="grid"] .row-thumb { width: auto; height: auto; }
+    .peek { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ix-title .w > span, .ix-sub, .ix-bar, .cols, .row-main, .row::before, .row:last-child::after { animation: none; }
+    .peek { transition: opacity 150ms ease; scale: 1; }
+  }
+</style>

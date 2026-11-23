@@ -38,7 +38,8 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
     <section class="work" id="work" aria-labelledby="work-title">
       <div class="toolbar">
         <p class="work-label"><span class="hand" id="work-title">selected work</span>
-          <span class="work-count">{liveCount} case {liveCount === 1 ? 'study' : 'studies'} · {projects.length - liveCount} in progress</span></p>
+          <span class="work-count">{liveCount} case {liveCount === 1 ? 'study' : 'studies'} · {projects.length - liveCount} in progress</span>
+          <a class="link see-all" href="/work">See the full index <PenArrow /></a></p>
         <div class="controls">
           <p class="counter" aria-live="polite">
             <span><span data-range>1–2</span> of {projects.length}</span>
@@ -359,6 +360,8 @@ const ph = (t: string) => (t.trim().startsWith('[') ? 'ph' : undefined);
   .work-label { margin: 0; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
   .work-label .hand { font-size: 28px; line-height: 1; }
   .work-count { font-size: 15px; color: var(--pencil); }
+  .see-all { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--ink); min-height: 44px; --pen-y: calc(100% - 9px); }
+  @media (max-width: 720px) { .see-all { min-height: 0; } }
 
   .controls { display: flex; align-items: center; gap: 0; margin-right: -8px; }
   .counter { margin: 0 12px 0 0; display: grid; justify-items: end; gap: 2px; font-size: 15px; color: var(--pencil); font-variant-numeric: tabular-nums; }

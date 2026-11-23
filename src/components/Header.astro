@@ -100,6 +100,13 @@ const isCurrent = (m: string[] = []) => m.some((x) => (x === '/' ? path === '/' 
     :global(:root:not([data-theme="light"])) .moon { opacity: 0; transform: rotate(40deg) scale(0.7); }
   }
 
+  @media (max-width: 420px) {
+    /* four links + the switch on a phone: tighten so nothing touches the mark */
+    .mark { font-size: 38px !important; }
+    ul { gap: 12px !important; }
+    nav a, nav button { font-size: 15px !important; }
+    .right { gap: 4px !important; }
+  }
   @media (max-width: 720px) {
     .mark { font-size: 44px; }
     .right { gap: 8px; }
